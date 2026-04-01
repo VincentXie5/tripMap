@@ -52,8 +52,34 @@ const handlePlanCreated = () => {
   loadPlans()
 }
 
+// 计划更新成功后刷新列表
+const handlePlanUpdated = () => {
+  loadPlans()
+}
+
+// 计划删除成功后刷新列表
+const handlePlanDeleted = () => {
+  selectedPlan.value = null
+  dailyPlans.value = []
+  loadPlans()
+}
+
 // 行程添加成功后刷新每日行程列表
 const handleDailyAdded = () => {
+  if (selectedPlan.value) {
+    handlePlanSelected(selectedPlan.value)
+  }
+}
+
+// 行程更新成功后刷新每日行程列表
+const handleDailyPlanUpdated = () => {
+  if (selectedPlan.value) {
+    handlePlanSelected(selectedPlan.value)
+  }
+}
+
+// 行程删除成功后刷新每日行程列表
+const handleDailyPlanDeleted = () => {
   if (selectedPlan.value) {
     handlePlanSelected(selectedPlan.value)
   }
@@ -72,12 +98,16 @@ onMounted(() => {
       <PlanList 
         :plans="plans" 
         :selected-plan-id="selectedPlan?.id || null"
-        @plan-selected="handlePlanSelected" 
+        @plan-selected="handlePlanSelected"
+        @plan-updated="handlePlanUpdated"
+        @plan-deleted="handlePlanDeleted"
       />
       <DailyPlanList 
         v-if="selectedPlan"
         :daily-plans="dailyPlans" 
-        :plan-title="selectedPlan.title" 
+        :plan-title="selectedPlan.title"
+        @daily-plan-updated="handleDailyPlanUpdated"
+        @daily-plan-deleted="handleDailyPlanDeleted"
       />
       <DailyPlanForm 
         v-if="selectedPlan"

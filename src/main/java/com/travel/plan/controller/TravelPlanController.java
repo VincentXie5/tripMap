@@ -26,4 +26,16 @@ public class TravelPlanController {
         List<TravelPlan> travelPlans = travelPlanService.getAllTravelPlans();
         return ResponseEntity.ok(travelPlans);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TravelPlan> updateTravelPlan(@PathVariable Long id, @RequestBody TravelPlan travelPlan) {
+        TravelPlan updatedPlan = travelPlanService.updateTravelPlan(id, travelPlan);
+        return ResponseEntity.ok(updatedPlan);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTravelPlan(@PathVariable Long id) {
+        travelPlanService.deleteTravelPlan(id);
+        return ResponseEntity.ok().build();
+    }
 }

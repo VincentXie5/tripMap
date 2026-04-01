@@ -26,4 +26,16 @@ public class DailyPlanController {
         List<DailyPlan> dailyPlans = dailyPlanService.getAllDailyPlansByTravelPlanId(planId);
         return ResponseEntity.ok(dailyPlans);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<DailyPlan> updateDailyPlan(@PathVariable Long id, @RequestBody DailyPlan dailyPlan) {
+        DailyPlan updatedPlan = dailyPlanService.updateDailyPlan(id, dailyPlan);
+        return ResponseEntity.ok(updatedPlan);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDailyPlan(@PathVariable Long id) {
+        dailyPlanService.deleteDailyPlan(id);
+        return ResponseEntity.ok().build();
+    }
 }
