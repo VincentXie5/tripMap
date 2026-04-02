@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dailyPlan")
@@ -37,5 +38,11 @@ public class DailyPlanController {
     public ResponseEntity<Void> deleteDailyPlan(@PathVariable Long id) {
         dailyPlanService.deleteDailyPlan(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/sort/{planId}")
+    public ResponseEntity<List<DailyPlan>> updateSortOrder(@PathVariable Long planId, @RequestBody List<Map<String, Object>> sortOrderList) {
+        List<DailyPlan> updatedPlans = dailyPlanService.updateSortOrder(planId, sortOrderList);
+        return ResponseEntity.ok(updatedPlans);
     }
 }

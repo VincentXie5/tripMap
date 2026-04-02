@@ -24,6 +24,7 @@ interface DailyPlan {
 const plans = ref<Plan[]>([])
 const selectedPlan = ref<Plan | null>(null)
 const dailyPlans = ref<DailyPlan[]>([])
+const highlightedDailyPlanId = ref<number | null>(null)
 
 // 加载所有旅行计划
 const loadPlans = async () => {
@@ -85,6 +86,21 @@ const handleDailyPlanDeleted = () => {
   }
 }
 
+// 地图点位点击触发行程高亮
+const handleMarkerClick = (planId: number) => {
+  highlightedDailyPlanId.value = planId
+}
+
+// 行程项点击触发地图联动
+const handleDailyPlanClick = (planId: number) => {
+  highlightedDailyPlanId.value = planId
+}
+
+// 点击空白区域取消高亮
+const handleMapClick = () => {
+  highlightedDailyPlanId.value = null
+}
+
 onMounted(() => {
   loadPlans()
 })
@@ -106,8 +122,10 @@ onMounted(() => {
         v-if="selectedPlan"
         :daily-plans="dailyPlans" 
         :plan-title="selectedPlan.title"
+        :highlighted-id="highlightedDailyPlanId"
         @daily-plan-updated="handleDailyPlanUpdated"
         @daily-plan-deleted="handleDailyPlanDeleted"
+        @daily-plan-click="handleDailyPlanClick"
       />
       <DailyPlanForm 
         v-if="selectedPlan"
@@ -118,7 +136,12 @@ onMounted(() => {
     
     <!-- 右侧地图 60% -->
     <div class="right-panel">
-      <LeafletMapComponent :daily-plans="dailyPlans" />
+      <LeafletMapComponent 
+        :daily-plans="dailyPlans"
+        :highlighted-id="highlightedDailyPlanId"
+        @marker-click="handleMarkerClick"
+        @map-click="handleMapClick"
+      />
     </div>
   </div>
 </template>

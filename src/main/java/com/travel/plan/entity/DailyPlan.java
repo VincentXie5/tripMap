@@ -1,6 +1,7 @@
 package com.travel.plan.entity;
 
 import lombok.Data;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,4 +21,7 @@ public class DailyPlan {
     private LocalDate planDate;
     private LocalTime time;
     private String location;
+    
+    @Column(columnDefinition = "INT DEFAULT 0")
+    private Integer sortOrder = 0;
 }

@@ -11,4 +11,7 @@ import java.util.List;
 public interface DailyPlanRepository extends JpaRepository<DailyPlan, Long> {
     @Query("SELECT dp FROM DailyPlan dp WHERE dp.travelPlan.id = :planId")
     List<DailyPlan> findAllByPlanId(Long planId);
+    
+    @Query("SELECT dp FROM DailyPlan dp WHERE dp.travelPlan.id = :planId ORDER BY dp.sortOrder ASC, dp.time ASC")
+    List<DailyPlan> findAllByPlanIdOrderBySortOrder(Long planId);
 }
