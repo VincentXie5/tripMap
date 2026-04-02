@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, defineProps } from 'vue'
+import { ref, onMounted, onUnmounted, watch, defineProps, defineEmits } from 'vue'
 import L from 'leaflet'
 
 interface DailyPlan {
@@ -20,7 +20,10 @@ interface DailyPlan {
 
 const props = defineProps<{
   dailyPlans: DailyPlan[]
+  highlightedId?: number | null
 }>()
+
+const emit = defineEmits(['marker-click', 'map-click'])
 
 const mapContainer = ref<HTMLElement | null>(null)
 const loading = ref(true)
@@ -39,6 +42,11 @@ const initMap = () => {
     maxZoom: 19
   }).addTo(map)
 
+  // 添加地图点击事件
+  map.on('click', () => {
+    emit('map-click')
+  })
+
   loading.value = false
 }
 
@@ -51,7 +59,7 @@ const clearMarkers = () => {
 }
 
 // 添加标记点
-const addMarker = (lat: number, lng: number, location: string, time: string) => {
+const addMarker = (lat: number, lng: number, location: string, time: string, planId: number) => {
   if (!map) return
 
   const marker = L.marker([lat, lng])
@@ -62,6 +70,12 @@ const addMarker = (lat: number, lng: number, location: string, time: string) => 
       </div>
     `)
 
+  marker.on('click', () => {
+    emit('marker-click', planId)
+  })
+
+  // 存储planId到marker
+  ;(marker as any).planId = planId
   markers.push(marker)
 }
 
@@ -105,7 +119,7 @@ const updateMarkers = async () => {
 
     const coords = await geocodeLocation(plan.location)
     if (coords) {
-      addMarker(coords.lat, coords.lng, plan.location, plan.time)
+      addMarker(coords.lat, coords.lng, plan.location, plan.time, plan.id)
       validPositions.push([coords.lat, coords.lng])
     }
   })
@@ -125,12 +139,51 @@ const updateMarkers = async () => {
   }
 }
 
+// 高亮标记点
+const highlightMarker = (planId: number | null) => {
+  markers.forEach(marker => {
+    const markerPlanId = (marker as any).planId
+    if (markerPlanId === planId) {
+      // 高亮样式：改变图标颜色为红色
+      marker.setIcon(L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      }))
+      // 居中地图到该点位
+      if (map) {
+        map.setView(marker.getLatLng(), 12)
+      }
+    } else {
+      // 恢复默认图标为蓝色
+      marker.setIcon(L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      }))
+    }
+  })
+}
+
 // 监听 dailyPlans 变化
 watch(() => props.dailyPlans, () => {
   if (map) {
     updateMarkers()
   }
 }, { deep: true })
+
+// 监听 highlightedId 变化
+watch(() => props.highlightedId, (newId) => {
+  if (map) {
+    highlightMarker(newId)
+  }
+})
 
 onMounted(() => {
   initMap()

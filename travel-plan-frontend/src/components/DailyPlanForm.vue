@@ -43,7 +43,7 @@ import { ElMessage } from 'element-plus'
 import { addDailyPlan } from '../api/travelApi'
 
 const props = defineProps<{
-  planId: number | null
+  planId: number
 }>()
 
 const emit = defineEmits(['daily-added'])

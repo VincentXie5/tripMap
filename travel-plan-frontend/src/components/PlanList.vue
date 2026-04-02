@@ -59,12 +59,10 @@ interface Plan {
   startDate: string
   endDate: string
 }
-
-const props = defineProps<{
+defineProps<{
   plans: Plan[]
   selectedPlanId: number | null
-}>()
-
+}>();
 const emit = defineEmits(['plan-selected', 'plan-updated', 'plan-deleted'])
 
 const editDialogVisible = ref(false)
