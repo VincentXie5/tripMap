@@ -75,6 +75,7 @@ const props = defineProps<{
   dailyPlans: DailyPlan[]
   planTitle: string
   highlightedId?: number | null
+  highlightedDate?: string | null
 }>()
 
 const emit = defineEmits(['daily-plan-updated', 'daily-plan-deleted', 'daily-plan-click'])

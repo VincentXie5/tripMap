@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, defineProps, defineEmits } from 'vue'
+import { ref, onMounted, onUnmounted, watch, defineProps, defineEmits, computed } from 'vue'
 import L from 'leaflet'
 
 interface DailyPlan {
@@ -16,19 +16,39 @@ interface DailyPlan {
   time: string
   location: string
   planDate: string
+  sortOrder?: number
+}
+
+interface RouteLine {
+  date: string
+  polyline: L.Polyline
+  coords: [number, number][]
+  colorIndex: number
 }
 
 const props = defineProps<{
   dailyPlans: DailyPlan[]
   highlightedId?: number | null
+  highlightedDate?: string | null
 }>()
 
-const emit = defineEmits(['marker-click', 'map-click'])
+const emit = defineEmits(['marker-click', 'map-click', 'route-click'])
 
 const mapContainer = ref<HTMLElement | null>(null)
 const loading = ref(true)
 let map: L.Map | null = null
 let markers: L.Marker[] = []
+let routeLines: RouteLine[] = []
+
+// 路线样式配置
+const routeStyles = {
+  colors: ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399'],
+  weight: 3,
+  opacity: 0.7,
+  dashArray: '10, 5',
+  highlightWeight: 5,
+  highlightOpacity: 1
+}
 
 // 初始化地图
 const initMap = () => {
@@ -178,10 +198,151 @@ watch(() => props.dailyPlans, () => {
   }
 }, { deep: true })
 
+// 清除所有路线
+const clearRoutes = () => {
+  routeLines.forEach(route => route.polyline.remove())
+  routeLines = []
+}
+
+// 绘制路线
+const drawRoutes = async () => {
+  clearRoutes()
+  
+  if (!props.dailyPlans || props.dailyPlans.length < 2) return
+  
+  // 按日期分组并排序
+  const groupedByDate = props.dailyPlans.reduce((acc, plan) => {
+    if (!acc[plan.planDate]) {
+      acc[plan.planDate] = []
+    }
+    acc[plan.planDate].push(plan)
+    return acc
+  }, {} as Record<string, DailyPlan[]>)
+  
+  let colorIndex = 0
+  
+  // 为每个日期绘制路线
+  for (const [date, plans] of Object.entries(groupedByDate)) {
+    // 按sortOrder排序
+    const sortedPlans = [...plans].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    
+    // 获取所有点位坐标
+    const coords: [number, number][] = []
+    for (const plan of sortedPlans) {
+      if (plan.location) {
+        const locationCoords = await geocodeLocation(plan.location)
+        if (locationCoords) {
+          coords.push([locationCoords.lat, locationCoords.lng])
+        }
+      }
+    }
+    
+    // 至少需要2个点才能绘制路线
+    if (coords.length >= 2) {
+      const polyline = L.polyline(coords, {
+        color: routeStyles.colors[colorIndex % routeStyles.colors.length],
+        weight: routeStyles.weight,
+        opacity: routeStyles.opacity,
+        dashArray: routeStyles.dashArray
+      }).addTo(map!)
+      
+      // 绑定点击事件
+      polyline.on('click', () => {
+        emit('route-click', date)
+      })
+      
+      // 绑定hover效果
+      polyline.on('mouseover', () => {
+        polyline.setStyle({
+          weight: routeStyles.highlightWeight,
+          opacity: routeStyles.highlightOpacity
+        })
+      })
+      
+      polyline.on('mouseout', () => {
+        // 如果不是当前高亮日期，恢复样式
+        if (props.highlightedDate !== date) {
+          polyline.setStyle({
+            weight: routeStyles.weight,
+            opacity: routeStyles.opacity
+          })
+        }
+      })
+      
+      routeLines.push({
+        date,
+        polyline,
+        coords,
+        colorIndex: colorIndex % routeStyles.colors.length
+      })
+      
+      colorIndex++
+    }
+  }
+}
+
+// 高亮指定日期的路线
+const highlightRoute = (date: string | null) => {
+  routeLines.forEach(route => {
+    if (route.date === date) {
+      route.polyline.setStyle({
+        weight: routeStyles.highlightWeight,
+        opacity: routeStyles.highlightOpacity
+      })
+      
+      // 同时高亮该日期的所有点位
+      const datePlanIds = props.dailyPlans
+        .filter(p => p.planDate === date)
+        .map(p => p.id)
+      
+      markers.forEach(marker => {
+        const markerPlanId = (marker as any).planId
+        if (datePlanIds.includes(markerPlanId)) {
+          marker.setIcon(L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+          }))
+        }
+      })
+      
+      // 地图居中到路线中心点
+      if (coords.length > 0 && map) {
+        const bounds = L.latLngBounds(route.coords)
+        map.fitBounds(bounds, { padding: [50, 50] })
+      }
+    } else {
+      route.polyline.setStyle({
+        color: routeStyles.colors[route.colorIndex],
+        weight: routeStyles.weight,
+        opacity: routeStyles.opacity
+      })
+    }
+  })
+}
+
+// 监听 dailyPlans 变化
+watch(() => props.dailyPlans, async () => {
+  if (map) {
+    await updateMarkers()
+    await drawRoutes()
+  }
+}, { deep: true })
+
 // 监听 highlightedId 变化
 watch(() => props.highlightedId, (newId) => {
   if (map) {
-    highlightMarker(newId)
+    highlightMarker(newId ?? null)
+  }
+})
+
+// 监听 highlightedDate 变化
+watch(() => props.highlightedDate, (newDate) => {
+  if (map) {
+    highlightRoute(newDate ?? null)
   }
 })
 

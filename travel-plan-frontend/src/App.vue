@@ -25,6 +25,7 @@ const plans = ref<Plan[]>([])
 const selectedPlan = ref<Plan | null>(null)
 const dailyPlans = ref<DailyPlan[]>([])
 const highlightedDailyPlanId = ref<number | null>(null)
+const highlightedDate = ref<string | null>(null)
 
 // 加载所有旅行计划
 const loadPlans = async () => {
@@ -89,16 +90,29 @@ const handleDailyPlanDeleted = () => {
 // 地图点位点击触发行程高亮
 const handleMarkerClick = (planId: number) => {
   highlightedDailyPlanId.value = planId
+  highlightedDate.value = null
+}
+
+// 地图路线点击触发日期高亮
+const handleRouteClick = (date: string) => {
+  highlightedDate.value = date
+  highlightedDailyPlanId.value = null
 }
 
 // 行程项点击触发地图联动
 const handleDailyPlanClick = (planId: number) => {
   highlightedDailyPlanId.value = planId
+  // 同时高亮该行程所在日期的路线
+  const plan = dailyPlans.value.find(p => p.id === planId)
+  if (plan) {
+    highlightedDate.value = plan.planDate
+  }
 }
 
 // 点击空白区域取消高亮
 const handleMapClick = () => {
   highlightedDailyPlanId.value = null
+  highlightedDate.value = null
 }
 
 onMounted(() => {
@@ -123,6 +137,7 @@ onMounted(() => {
         :daily-plans="dailyPlans" 
         :plan-title="selectedPlan.title"
         :highlighted-id="highlightedDailyPlanId"
+        :highlighted-date="highlightedDate"
         @daily-plan-updated="handleDailyPlanUpdated"
         @daily-plan-deleted="handleDailyPlanDeleted"
         @daily-plan-click="handleDailyPlanClick"
@@ -139,7 +154,9 @@ onMounted(() => {
       <LeafletMapComponent 
         :daily-plans="dailyPlans"
         :highlighted-id="highlightedDailyPlanId"
+        :highlighted-date="highlightedDate"
         @marker-click="handleMarkerClick"
+        @route-click="handleRouteClick"
         @map-click="handleMapClick"
       />
     </div>
