@@ -3,10 +3,12 @@ package com.travel.plan.service.impl;
 import com.travel.plan.entity.DailyPlan;
 import com.travel.plan.repository.DailyPlanRepository;
 import com.travel.plan.service.DailyPlanService;
+import com.travel.plan.service.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,8 +19,13 @@ public class DailyPlanServiceImpl implements DailyPlanService {
     @Autowired
     private DailyPlanRepository dailyPlanRepository;
 
+    @Autowired
+    private GeocodeService geocodeService;
+
     @Override
     public DailyPlan createDailyPlan(DailyPlan dailyPlan) {
+        // 自动地理编码
+        autoGeocode(dailyPlan);
         return dailyPlanRepository.save(dailyPlan);
     }
 
@@ -34,7 +41,18 @@ public class DailyPlanServiceImpl implements DailyPlanService {
             DailyPlan plan = existingPlan.get();
             plan.setPlanDate(dailyPlan.getPlanDate());
             plan.setTime(dailyPlan.getTime());
+            
+            // 地点发生变化时重新编码
+            boolean locationChanged = !plan.getLocation().equals(dailyPlan.getLocation());
             plan.setLocation(dailyPlan.getLocation());
+            
+            if (locationChanged) {
+                // 清空原有坐标，触发重新编码
+                plan.setLatitude(null);
+                plan.setLongitude(null);
+                autoGeocode(plan);
+            }
+            
             return dailyPlanRepository.save(plan);
         }
         throw new RuntimeException("DailyPlan not found with id: " + id);
@@ -60,5 +78,24 @@ public class DailyPlanServiceImpl implements DailyPlanService {
             }
         }
         return dailyPlanRepository.findAllByPlanIdOrderBySortOrder(planId);
+    }
+
+    /**
+     * 自动地理编码
+     * 当地点有值且坐标为空时，自动调用地理编码服务
+     * @param dailyPlan 每日行程
+     */
+    private void autoGeocode(DailyPlan dailyPlan) {
+        if (dailyPlan.getLocation() != null 
+                && !dailyPlan.getLocation().isBlank()
+                && dailyPlan.getLatitude() == null 
+                && dailyPlan.getLongitude() == null) {
+            
+            BigDecimal[] coords = geocodeService.geocode(dailyPlan.getLocation());
+            if (coords != null && coords.length == 2) {
+                dailyPlan.setLatitude(coords[0]);
+                dailyPlan.setLongitude(coords[1]);
+            }
+        }
     }
 }

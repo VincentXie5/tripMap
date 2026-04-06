@@ -24,4 +24,14 @@ public class DailyPlan {
     
     @Column(columnDefinition = "INT DEFAULT 0")
     private Integer sortOrder = 0;
+    
+    /**
+     * 纬度
+     */
+    private java.math.BigDecimal latitude;
+    
+    /**
+     * 经度
+     */
+    private java.math.BigDecimal longitude;
 }

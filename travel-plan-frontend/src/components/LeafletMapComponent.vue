@@ -17,6 +17,8 @@ interface DailyPlan {
   location: string
   planDate: string
   sortOrder?: number
+  latitude?: number | null
+  longitude?: number | null
 }
 
 interface RouteLine {
@@ -99,28 +101,9 @@ const addMarker = (lat: number, lng: number, location: string, time: string, pla
   markers.push(marker)
 }
 
-// 地理编码：将地点名称转换为经纬度
-const geocodeLocation = async (location: string): Promise<{ lat: number; lng: number } | null> => {
-  try {
-    // 使用 Nominatim API 进行地理编码（免费）
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`
-    )
-    const data = await response.json()
-    
-    if (data && data.length > 0) {
-      const { lat, lon } = data[0]
-      return { lat: parseFloat(lat), lng: parseFloat(lon) }
-    }
-    return null
-  } catch (error) {
-    console.warn(`地理编码失败: ${location}`, error)
-    return null
-  }
-}
 
 // 更新地图标记
-const updateMarkers = async () => {
+const updateMarkers = () => {
   clearMarkers()
 
   if (!props.dailyPlans || props.dailyPlans.length === 0) {
@@ -133,18 +116,13 @@ const updateMarkers = async () => {
 
   const validPositions: [number, number][] = []
 
-  // 并行处理所有地点的地理编码
-  const promises = props.dailyPlans.map(async (plan) => {
-    if (!plan.location) return
-
-    const coords = await geocodeLocation(plan.location)
-    if (coords) {
-      addMarker(coords.lat, coords.lng, plan.location, plan.time, plan.id)
-      validPositions.push([coords.lat, coords.lng])
+  // 直接使用后端返回的经纬度
+  props.dailyPlans.forEach((plan) => {
+    if (plan.location && plan.latitude && plan.longitude) {
+      addMarker(plan.latitude, plan.longitude, plan.location, plan.time, plan.id)
+      validPositions.push([plan.latitude, plan.longitude])
     }
   })
-
-  await Promise.all(promises)
 
   // 自适应显示所有标记点
   if (validPositions.length > 0 && map) {
@@ -205,7 +183,7 @@ const clearRoutes = () => {
 }
 
 // 绘制路线
-const drawRoutes = async () => {
+const drawRoutes = () => {
   clearRoutes()
   
   if (!props.dailyPlans || props.dailyPlans.length < 2) return
@@ -229,11 +207,8 @@ const drawRoutes = async () => {
     // 获取所有点位坐标
     const coords: [number, number][] = []
     for (const plan of sortedPlans) {
-      if (plan.location) {
-        const locationCoords = await geocodeLocation(plan.location)
-        if (locationCoords) {
-          coords.push([locationCoords.lat, locationCoords.lng])
-        }
+      if (plan.location && plan.latitude && plan.longitude) {
+        coords.push([plan.latitude, plan.longitude])
       }
     }
     
@@ -325,10 +300,10 @@ const highlightRoute = (date: string | null) => {
 }
 
 // 监听 dailyPlans 变化
-watch(() => props.dailyPlans, async () => {
+watch(() => props.dailyPlans, () => {
   if (map) {
-    await updateMarkers()
-    await drawRoutes()
+    updateMarkers()
+    drawRoutes()
   }
 }, { deep: true })
 
@@ -349,6 +324,7 @@ watch(() => props.highlightedDate, (newDate) => {
 onMounted(() => {
   initMap()
   updateMarkers()
+  drawRoutes()
 })
 
 onUnmounted(() => {
