@@ -1,2 +1,6 @@
 # Project exclude paths
 /target/
+/node_modules/
+/travel-plan-frontend/node_modules
+/travel-plan-frontend/dist
+/.idea

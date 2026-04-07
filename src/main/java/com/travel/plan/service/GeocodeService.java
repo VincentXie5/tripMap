@@ -11,6 +11,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 地理编码服务
@@ -41,6 +43,80 @@ public class GeocodeService {
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
         this.objectMapper = new ObjectMapper();
+    }
+
+    /**
+     * 地点搜索：返回多条匹配的地点建议
+     * @param keyword 搜索关键词
+     * @return 地点列表，包含名称、地址、经纬度
+     */
+    public List<Map<String, Object>> searchLocations(String keyword) {
+        if (keyword == null || keyword.isBlank() || keyword.length() < 1) {
+            return List.of();
+        }
+
+        try {
+            // 限流控制：保证至少间隔1.2秒
+            rateLimit();
+
+            String url = String.format("%s?format=json&q=%s&limit=5&accept-language=zh-CN,zh&addressdetails=1",
+                    NOMINATIM_URL,
+                    java.net.URLEncoder.encode(keyword.trim(), "UTF-8"));
+
+            log.info("地点搜索请求: {}", keyword);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+                    .header("Accept", "application/json")
+                    .header("Accept-Language", "zh-CN,zh;q=0.9")
+                    .header("Cache-Control", "no-cache")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            String responseBody = response.body();
+
+            if (response.statusCode() != 200) {
+                log.error("地点搜索HTTP错误: 状态码={}, 响应={}", response.statusCode(), responseBody);
+                return List.of();
+            }
+
+            JsonNode root = objectMapper.readTree(responseBody);
+
+            List<Map<String, Object>> results = new java.util.ArrayList<>();
+
+            if (root.isArray() && root.size() > 0) {
+                for (int i = 0; i < root.size(); i++) {
+                    JsonNode item = root.get(i);
+                    Map<String, Object> location = new java.util.HashMap<>();
+
+                    location.put("name", item.get("display_name").asText());
+                    location.put("lat", new BigDecimal(item.get("lat").asText()));
+                    location.put("lon", new BigDecimal(item.get("lon").asText()));
+
+                    // 提取行政区划信息
+                    JsonNode address = item.get("address");
+                    if (address != null) {
+                        StringBuilder addressBuilder = new StringBuilder();
+                        if (address.has("city")) addressBuilder.append(address.get("city").asText());
+                        if (address.has("state")) addressBuilder.append(" ").append(address.get("state").asText());
+                        if (address.has("country")) addressBuilder.append(" ").append(address.get("country").asText());
+                        location.put("address", addressBuilder.toString());
+                    }
+
+                    results.add(location);
+                }
+            }
+
+            log.info("地点搜索返回 {} 条结果: {}", results.size(), keyword);
+            return results;
+
+        } catch (Exception e) {
+            log.error("地点搜索失败: {}, 错误: {}", keyword, e.getMessage(), e);
+            return List.of();
+        }
     }
 
     /**
