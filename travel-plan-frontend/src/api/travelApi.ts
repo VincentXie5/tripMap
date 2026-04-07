@@ -18,12 +18,12 @@ export const updatePlan = (id: number, data: { title: string; startDate: string;
 export const deletePlan = (id: number) => request.delete(`/api/travelPlan/${id}`)
 
 // 每日计划相关接口
-export const addDailyPlan = (data: { travelPlan: { id: number }; time: string; location: string; planDate: string }) => 
+export const addDailyPlan = (data: { travelPlan: { id: number }; time: string; location: string; planDate: string; remark?: string; tag?: number }) => 
   request.post('/api/dailyPlan', data)
 
 export const getDailyPlanList = (planId: number) => request.get(`/api/dailyPlan/${planId}`)
 
-export const updateDailyPlan = (id: number, data: { travelPlan: { id: number }; time: string; location: string; planDate: string }) => 
+export const updateDailyPlan = (id: number, data: { travelPlan: { id: number }; time: string; location: string; planDate: string; remark?: string; tag?: number }) => 
   request.put(`/api/dailyPlan/${id}`, data)
 
 export const deleteDailyPlan = (id: number) => request.delete(`/api/dailyPlan/${id}`)

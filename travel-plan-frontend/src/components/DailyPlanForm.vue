@@ -56,6 +56,17 @@
           </div>
         </div>
       </el-form-item>
+      <el-form-item label="标签">
+        <el-radio-group v-model="form.tag" size="small">
+          <el-radio :label="0">无标签</el-radio>
+          <el-radio :label="1">🏛️ 景点</el-radio>
+          <el-radio :label="2">🍜 美食</el-radio>
+          <el-radio :label="3">🏨 住宿</el-radio>
+          <el-radio :label="4">🚗 交通</el-radio>
+          <el-radio :label="5">🛒 购物</el-radio>
+        </el-radio-group>
+      </el-form-item>
+
       <el-form-item label="备注">
         <el-input
           v-model="form.remark"
@@ -96,7 +107,8 @@ const form = reactive({
   planDate: '',
   time: '',
   location: '',
-  remark: ''
+  remark: '',
+  tag: 0
 })
 
 const rules = {
@@ -250,7 +262,8 @@ const submitForm = async () => {
           planDate: form.planDate,
           time: form.time,
           location: form.location,
-          remark: form.remark
+          remark: form.remark,
+          tag: form.tag
         }
         await addDailyPlan(data)
         ElMessage.success('行程添加成功！')

@@ -28,15 +28,16 @@
               <div
                 :ref="setDailyItemRef(element.id)"
                 class="daily-item"
-                :class="{ highlighted: highlightedId === element.id }"
+                :class="{ highlighted: highlightedId === element.id, [`tag-${element.tag}`]: element.tag }"
                 @click="handleItemClick(element)"
               >
-                <div class="timeline-dot"></div>
+                <div class="timeline-dot" :class="[`tag-dot-${element.tag}`]"></div>
                 <div class="drag-handle">⋮⋮</div>
                 <div class="daily-content">
                   <div class="daily-info">
                     <span class="daily-time">{{ formatTime(element.time) }}</span>
                     <span class="daily-location">{{ element.location }}</span>
+                    <span class="daily-tag" v-if="element.tag">{{ getTagName(element.tag) }}</span>
                   </div>
                   <div v-if="element.remark" class="daily-remark">{{ element.remark }}</div>
                 </div>
@@ -63,6 +64,16 @@
         <el-form-item label="行程地点">
           <el-input v-model="editForm.location" placeholder="请输入地点" />
         </el-form-item>
+        <el-form-item label="行程标签">
+          <el-radio-group v-model="editForm.tag" size="small">
+            <el-radio :label="0">无标签</el-radio>
+            <el-radio :label="1">🏛️ 景点</el-radio>
+            <el-radio :label="2">🍜 美食</el-radio>
+            <el-radio :label="3">🏨 住宿</el-radio>
+            <el-radio :label="4">🚗 交通</el-radio>
+            <el-radio :label="5">🛒 购物</el-radio>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item label="行程备注">
           <el-input
             v-model="editForm.remark"
@@ -88,6 +99,15 @@ import { ElMessageBox, ElMessage } from 'element-plus'
 import draggable from 'vuedraggable'
 import { updateDailyPlan, deleteDailyPlan as deleteDailyPlanApi, updateDailyPlanSort } from '../api/travelApi'
 
+const tagNames: Record<number, string> = {
+  0: '无标签',
+  1: '🏛️ 景点',
+  2: '🍜 美食',
+  3: '🏨 住宿',
+  4: '🚗 交通',
+  5: '🛒 购物'
+}
+
 interface DailyPlan {
   id: number
   time: string
@@ -95,6 +115,7 @@ interface DailyPlan {
   planDate: string
   planId?: number
   remark?: string
+  tag?: number
 }
 
 const props = defineProps<{
@@ -113,7 +134,8 @@ const editForm = ref({
   planDate: '',
   time: '',
   location: '',
-  remark: ''
+  remark: '',
+  tag: 0
 })
 
 const dailyItemRefs = ref<Record<number, HTMLElement>>({})
@@ -155,6 +177,8 @@ const groupedDailyPlans = computed(() => {
   return sortedGroups
 })
 
+const getTagName = (tag: number) => tagNames[tag] || tagNames[0]
+
 const formatTime = (time: string) => {
   if (!time) return ''
   // 处理 LocalTime 格式，只显示小时和分钟
@@ -186,7 +210,8 @@ const editDailyPlan = (plan: DailyPlan) => {
     planDate: plan.planDate,
     time: plan.time,
     location: plan.location,
-    remark: plan.remark || ''
+    remark: plan.remark || '',
+    tag: plan.tag || 0
   }
   editDialogVisible.value = true
 }
@@ -198,7 +223,8 @@ const confirmEdit = async () => {
       planDate: editForm.value.planDate,
       time: editForm.value.time,
       location: editForm.value.location,
-      remark: editForm.value.remark
+      remark: editForm.value.remark,
+      tag: editForm.value.tag
     })
     ElMessage.success('更新成功')
     editDialogVisible.value = false
@@ -391,6 +417,12 @@ onUnmounted(() => {
   transform: translateX(4px);
 }
 
+.daily-item.tag-1 { border-left-color: #409eff; }
+.daily-item.tag-2 { border-left-color: #f57c00; }
+.daily-item.tag-3 { border-left-color: #43a047; }
+.daily-item.tag-4 { border-left-color: #757575; }
+.daily-item.tag-5 { border-left-color: #e53935; }
+
 .timeline-dot {
   position: absolute;
   left: -27px;
@@ -403,6 +435,12 @@ onUnmounted(() => {
   z-index: 1;
 }
 
+.tag-dot-1 { background-color: #409eff; }
+.tag-dot-2 { background-color: #f57c00; }
+.tag-dot-3 { background-color: #43a047; }
+.tag-dot-4 { background-color: #757575; }
+.tag-dot-5 { background-color: #e53935; }
+
 .daily-content {
   flex: 1;
   display: flex;
@@ -414,6 +452,14 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+.daily-tag {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #e8f0fe;
+  color: #1976d2;
 }
 
 .daily-remark {

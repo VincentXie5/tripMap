@@ -46,7 +46,8 @@ public class DailyPlanServiceImpl implements DailyPlanService {
             boolean locationChanged = !plan.getLocation().equals(dailyPlan.getLocation());
             plan.setLocation(dailyPlan.getLocation());
             plan.setRemark(dailyPlan.getRemark());
-            
+            plan.setTag(dailyPlan.getTag());
+
             if (locationChanged) {
                 // 清空原有坐标，触发重新编码
                 plan.setLatitude(null);

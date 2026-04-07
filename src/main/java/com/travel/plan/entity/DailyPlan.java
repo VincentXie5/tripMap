@@ -40,4 +40,11 @@ public class  DailyPlan {
      */
     @Column(length = 1000)
     private String remark;
+
+    /**
+     * 行程标签
+     * 0: 其他, 1: 景点, 2: 美食, 3: 住宿, 4: 交通, 5: 购物
+     */
+    @Column(columnDefinition = "INT DEFAULT 0")
+    private Integer tag = 0;
 }

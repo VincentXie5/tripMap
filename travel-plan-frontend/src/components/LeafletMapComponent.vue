@@ -29,6 +29,16 @@
 import { ref, onMounted, onUnmounted, watch, defineProps, defineEmits, computed } from 'vue'
 import L from 'leaflet'
 
+// 标签颜色与标记图标映射表
+const tagMarkerIcons: Record<number, string> = {
+  0: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-grey.png',
+  1: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+  2: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+  3: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+  4: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-grey.png',
+  5: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png'
+}
+
 interface DailyPlan {
   id: number
   time: string
@@ -38,6 +48,7 @@ interface DailyPlan {
   latitude?: number | null
   longitude?: number | null
   remark?: string
+  tag?: number
 }
 
 interface RouteLine {
@@ -104,7 +115,16 @@ const clearMarkers = () => {
 const addMarker = (plan: DailyPlan) => {
   if (!map || !plan.latitude || !plan.longitude) return
 
-  const marker = L.marker([plan.latitude, plan.longitude])
+  const marker = L.marker([plan.latitude, plan.longitude], {
+    icon: L.icon({
+      iconUrl: tagMarkerIcons[plan.tag || 0],
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    })
+  })
     .addTo(map)
     .bindPopup(L.popup({
       maxWidth: 300,
@@ -114,6 +134,16 @@ const addMarker = (plan: DailyPlan) => {
       autoPanPadding: [50, 50],
       closeOnClick: false
     }))
+
+  // 标签名称映射
+  const tagNames: Record<number, string> = {
+    0: '无标签',
+    1: '🏛️ 景点',
+    2: '🍜 美食',
+    3: '🏨 住宿',
+    4: '🚗 交通',
+    5: '🛒 购物'
+  }
 
   // 构建弹窗内容
   const buildPopupContent = () => {
@@ -125,6 +155,10 @@ const addMarker = (plan: DailyPlan) => {
     }
     
     html += `<div class="popup-location">${plan.location}</div>`
+    
+    if (plan.tag && plan.tag > 0) {
+      html += `<div class="popup-tag">${tagNames[plan.tag]}</div>`
+    }
     
     if (plan.remark) {
       html += `<div class="popup-remark">${plan.remark}</div>`
@@ -549,8 +583,18 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 600;
   color: #303133;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   line-height: 1.4;
+}
+
+:deep(.custom-marker-popup .popup-tag) {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #e8f0fe;
+  color: #1976d2;
+  display: inline-block;
+  margin-bottom: 8px;
 }
 
 :deep(.custom-marker-popup .popup-remark) {
