@@ -12,7 +12,7 @@ import java.time.LocalTime;
 
 @Data
 @Entity
-public class DailyPlan {
+public class  DailyPlan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -34,4 +34,10 @@ public class DailyPlan {
      * 经度
      */
     private java.math.BigDecimal longitude;
+
+    /**
+     * 行程备注
+     */
+    @Column(length = 1000)
+    private String remark;
 }

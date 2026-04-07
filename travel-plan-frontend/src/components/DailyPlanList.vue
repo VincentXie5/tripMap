@@ -23,9 +23,12 @@
             @click="handleItemClick(element)"
           >
             <div class="drag-handle">⋮⋮</div>
-            <div class="daily-info">
-              <span class="daily-time">{{ formatTime(element.time) }}</span>
-              <span class="daily-location">{{ element.location }}</span>
+            <div class="daily-content">
+              <div class="daily-info">
+                <span class="daily-time">{{ formatTime(element.time) }}</span>
+                <span class="daily-location">{{ element.location }}</span>
+              </div>
+              <div v-if="element.remark" class="daily-remark">{{ element.remark }}</div>
             </div>
             <div class="daily-actions">
               <el-button type="primary" size="small" @click.stop="editDailyPlan(element)">编辑</el-button>
@@ -48,6 +51,16 @@
         <el-form-item label="行程地点">
           <el-input v-model="editForm.location" placeholder="请输入地点" />
         </el-form-item>
+        <el-form-item label="行程备注">
+          <el-input
+            v-model="editForm.remark"
+            type="textarea"
+            :rows="3"
+            placeholder="行程备注、注意事项、交通信息等（可选）"
+            maxlength="1000"
+            show-word-limit
+          />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="editDialogVisible = false">取消</el-button>
@@ -69,6 +82,7 @@ interface DailyPlan {
   location: string
   planDate: string
   planId?: number
+  remark?: string
 }
 
 const props = defineProps<{
@@ -86,7 +100,8 @@ const editForm = ref({
   planId: 0,
   planDate: '',
   time: '',
-  location: ''
+  location: '',
+  remark: ''
 })
 
 const dailyItemRefs = ref<Record<number, HTMLElement>>({})
@@ -109,7 +124,8 @@ const editDailyPlan = (plan: DailyPlan) => {
     planId: plan.planId || 0,
     planDate: plan.planDate,
     time: plan.time,
-    location: plan.location
+    location: plan.location,
+    remark: plan.remark || ''
   }
   editDialogVisible.value = true
 }
@@ -120,7 +136,8 @@ const confirmEdit = async () => {
       travelPlan: { id: editForm.value.planId},
       planDate: editForm.value.planDate,
       time: editForm.value.time,
-      location: editForm.value.location
+      location: editForm.value.location,
+      remark: editForm.value.remark
     })
     ElMessage.success('更新成功')
     editDialogVisible.value = false
@@ -230,10 +247,24 @@ const handleDragEnd = async () => {
   transform: translateX(4px);
 }
 
+.daily-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .daily-info {
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+.daily-remark {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+  padding-left: 60px;
 }
 
 .daily-time {

@@ -27,6 +27,16 @@
       <el-form-item label="地点" prop="location">
         <el-input v-model="form.location" placeholder="请输入地点" />
       </el-form-item>
+      <el-form-item label="备注">
+        <el-input
+          v-model="form.remark"
+          type="textarea"
+          :rows="3"
+          placeholder="行程备注、注意事项、交通信息等（可选）"
+          maxlength="1000"
+          show-word-limit
+        />
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="submitForm" :loading="loading">
           添加行程
@@ -54,7 +64,8 @@ const loading = ref(false)
 const form = reactive({
   planDate: '',
   time: '',
-  location: ''
+  location: '',
+  remark: ''
 })
 
 const rules = {
@@ -85,7 +96,8 @@ const submitForm = async () => {
           travelPlan: { id: props.planId },
           planDate: form.planDate,
           time: form.time,
-          location: form.location
+          location: form.location,
+          remark: form.remark
         }
         await addDailyPlan(data)
         ElMessage.success('行程添加成功！')
