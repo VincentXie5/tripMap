@@ -26,6 +26,7 @@ const selectedPlan = ref<Plan | null>(null)
 const dailyPlans = ref<DailyPlan[]>([])
 const highlightedDailyPlanId = ref<number | null>(null)
 const highlightedDate = ref<string | null>(null)
+const planListRef = ref()
 
 // 加载所有旅行计划
 const loadPlans = async () => {
@@ -109,6 +110,64 @@ const handleDailyPlanClick = (planId: number) => {
   }
 }
 
+// 生成Markdown导出内容
+const generateMarkdownContent = (plan: Plan, plans: DailyPlan[]) => {
+  const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  
+  let md = `# ${plan.title}\n\n`
+  md += `⏰ 出行时间：${plan.startDate} 至 ${plan.endDate}\n\n`
+  
+  // 按日期分组
+  const groups: Record<string, DailyPlan[]> = {}
+  plans.forEach(p => {
+    if (!groups[p.planDate]) {
+      groups[p.planDate] = []
+    }
+    groups[p.planDate].push(p)
+  })
+  
+  // 按日期排序
+  const sortedDates = Object.keys(groups).sort()
+  
+  sortedDates.forEach(date => {
+    const d = new Date(date)
+    const weekDay = weekDays[d.getDay()]
+    md += `## ${date} ${weekDay}\n`
+    
+    groups[date].sort((a, b) => a.time.localeCompare(b.time)).forEach(item => {
+      const time = item.time.substring(0, 5)
+      md += `- ${time} ${item.location}`
+      if (item.remark) {
+        md += `  \n  > ${item.remark}`
+      }
+      md += '\n'
+    })
+    md += '\n'
+  })
+  
+  md += `---\n*由 tripMap 旅行规划系统自动生成*\n`
+  
+  return md
+}
+
+// 处理导出Markdown事件
+const handleExportMarkdown = async (plan: Plan) => {
+  // 先加载该计划的所有行程
+  try {
+    const response = await getDailyPlanList(plan.id)
+    const markdown = generateMarkdownContent(plan, response.data)
+    
+    // 触发PlanList组件显示导出弹窗
+    // 通过ref调用子组件方法
+    if (planListRef.value) {
+      planListRef.value.exportMarkdownContent = markdown
+      planListRef.value.exportDialogVisible = true
+    }
+  } catch (error) {
+    console.error('加载行程数据失败:', error)
+  }
+}
+
 // 点击空白区域取消高亮
 const handleMapClick = () => {
   highlightedDailyPlanId.value = null
@@ -126,11 +185,13 @@ onMounted(() => {
     <div class="left-panel">
       <TravelPlanForm @plan-created="handlePlanCreated" />
       <PlanList 
+        ref="planListRef"
         :plans="plans" 
         :selected-plan-id="selectedPlan?.id || null"
         @plan-selected="handlePlanSelected"
         @plan-updated="handlePlanUpdated"
         @plan-deleted="handlePlanDeleted"
+        @export-markdown="handleExportMarkdown"
       />
       <DailyPlanList 
         v-if="selectedPlan"

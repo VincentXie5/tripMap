@@ -21,11 +21,27 @@
           <span class="plan-title">{{ plan.title }}</span>
         </div>
         <div class="plan-actions">
+          <el-button type="success" size="small" @click.stop="exportMarkdown(plan)">导出MD</el-button>
           <el-button type="primary" size="small" @click.stop="editPlan(plan)">编辑</el-button>
           <el-button type="danger" size="small" @click.stop="deletePlan(plan)">删除</el-button>
         </div>
       </div>
     </el-scrollbar>
+
+    <!-- Markdown导出弹窗 -->
+    <el-dialog v-model="exportDialogVisible" title="导出Markdown" width="600px">
+      <el-input
+        v-model="exportMarkdownContent"
+        type="textarea"
+        :rows="15"
+        readonly
+        style="margin-bottom: 16px; font-family: monospace;"
+      />
+      <template #footer>
+        <el-button @click="exportDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="copyToClipboard">一键复制</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 编辑计划弹窗 -->
     <el-dialog v-model="editDialogVisible" title="编辑旅行计划" width="400px">
@@ -49,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref } from 'vue'
+import { defineProps, defineEmits, ref, defineExpose } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { updatePlan, deletePlan as deletePlanApi } from '../api/travelApi'
 
@@ -73,8 +89,24 @@ const editForm = ref({
   endDate: ''
 })
 
+const exportDialogVisible = ref(false)
+const exportMarkdownContent = ref('')
+
 const selectPlan = (plan: Plan) => {
   emit('plan-selected', plan)
+}
+
+const exportMarkdown = (plan: Plan) => {
+  emit('export-markdown', plan)
+}
+
+const copyToClipboard = async () => {
+  try {
+    await navigator.clipboard.writeText(exportMarkdownContent.value)
+    ElMessage.success('已复制到剪贴板！')
+  } catch (error) {
+    ElMessage.error('复制失败，请手动复制')
+  }
 }
 
 const editPlan = (plan: Plan) => {
@@ -122,6 +154,12 @@ const deletePlan = async (plan: Plan) => {
     }
   }
 }
+
+// 暴露给父组件的方法和属性
+defineExpose({
+  exportDialogVisible,
+  exportMarkdownContent
+})
 </script>
 
 <style scoped>
