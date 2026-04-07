@@ -6,37 +6,49 @@
     <div v-if="dailyPlans.length === 0" class="empty-tip">
       暂无行程安排，请添加当日行程
     </div>
-    <el-scrollbar v-else height="250px">
-      <draggable
-        v-model="localDailyPlans"
-        item-key="id"
-        handle=".drag-handle"
-        :animation="200"
-        ghost-class="ghost-item"
-        @end="handleDragEnd"
-      >
-        <template #item="{ element }">
-          <div
-            :ref="setDailyItemRef(element.id)"
-            class="daily-item"
-            :class="{ highlighted: highlightedId === element.id }"
-            @click="handleItemClick(element)"
+    <el-scrollbar v-else height="400px">
+      <div v-for="(group, dateKey) in groupedDailyPlans" :key="dateKey" class="date-group">
+        <div class="date-header" @click="toggleGroup(dateKey)">
+          <span class="toggle-icon">{{ expandedGroups[dateKey] ? '▼' : '▶' }}</span>
+          <span class="date-title">📅 {{ formatDate(dateKey) }}</span>
+          <span class="date-count">{{ group.length }} 个行程</span>
+        </div>
+        
+        <div v-show="expandedGroups[dateKey]" class="date-content">
+          <div class="timeline-line"></div>
+          <draggable
+            v-model="groupedDailyPlans[dateKey]"
+            item-key="id"
+            handle=".drag-handle"
+            :animation="200"
+            ghost-class="ghost-item"
+            @end="handleDragEnd"
           >
-            <div class="drag-handle">⋮⋮</div>
-            <div class="daily-content">
-              <div class="daily-info">
-                <span class="daily-time">{{ formatTime(element.time) }}</span>
-                <span class="daily-location">{{ element.location }}</span>
+            <template #item="{ element }">
+              <div
+                :ref="setDailyItemRef(element.id)"
+                class="daily-item"
+                :class="{ highlighted: highlightedId === element.id }"
+                @click="handleItemClick(element)"
+              >
+                <div class="timeline-dot"></div>
+                <div class="drag-handle">⋮⋮</div>
+                <div class="daily-content">
+                  <div class="daily-info">
+                    <span class="daily-time">{{ formatTime(element.time) }}</span>
+                    <span class="daily-location">{{ element.location }}</span>
+                  </div>
+                  <div v-if="element.remark" class="daily-remark">{{ element.remark }}</div>
+                </div>
+                <div class="daily-actions">
+                  <el-button type="primary" size="small" @click.stop="editDailyPlan(element)">编辑</el-button>
+                  <el-button type="danger" size="small" @click.stop="deleteDailyPlan(element)">删除</el-button>
+                </div>
               </div>
-              <div v-if="element.remark" class="daily-remark">{{ element.remark }}</div>
-            </div>
-            <div class="daily-actions">
-              <el-button type="primary" size="small" @click.stop="editDailyPlan(element)">编辑</el-button>
-              <el-button type="danger" size="small" @click.stop="deleteDailyPlan(element)">删除</el-button>
-            </div>
-          </div>
-        </template>
-      </draggable>
+            </template>
+          </draggable>
+        </div>
+      </div>
     </el-scrollbar>
 
     <!-- 编辑行程弹窗 -->
@@ -71,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, watch, nextTick } from 'vue'
+import { defineProps, defineEmits, ref, watch, nextTick, computed } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import draggable from 'vuedraggable'
 import { updateDailyPlan, deleteDailyPlan as deleteDailyPlanApi, updateDailyPlanSort } from '../api/travelApi'
@@ -108,6 +120,41 @@ const dailyItemRefs = ref<Record<number, HTMLElement>>({})
 const localDailyPlans = ref<DailyPlan[]>([...props.dailyPlans])
 const loading = ref(false)
 
+// 分组展开状态
+const expandedGroups = ref<Record<string, boolean>>({})
+
+// 按日期分组的计算属性
+const groupedDailyPlans = computed(() => {
+  const groups: Record<string, DailyPlan[]> = {}
+  
+  // 初始化展开状态
+  localDailyPlans.value.forEach(plan => {
+    const dateKey = plan.planDate
+    if (!groups[dateKey]) {
+      groups[dateKey] = []
+      // 默认全部展开
+      if (expandedGroups.value[dateKey] === undefined) {
+        expandedGroups.value[dateKey] = true
+      }
+    }
+    groups[dateKey].push(plan)
+  })
+  
+  // 每个分组内按时间排序
+  Object.keys(groups).forEach(dateKey => {
+    groups[dateKey].sort((a, b) => a.time.localeCompare(b.time))
+  })
+  
+  // 按日期排序
+  const sortedKeys = Object.keys(groups).sort()
+  const sortedGroups: Record<string, DailyPlan[]> = {}
+  sortedKeys.forEach(key => {
+    sortedGroups[key] = groups[key]
+  })
+  
+  return sortedGroups
+})
+
 const formatTime = (time: string) => {
   if (!time) return ''
   // 处理 LocalTime 格式，只显示小时和分钟
@@ -116,6 +163,20 @@ const formatTime = (time: string) => {
     return `${parts[0]}:${parts[1]}`
   }
   return time
+}
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return dateStr
+  const date = new Date(dateStr)
+  const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const weekDay = weekDays[date.getDay()]
+  return `${date.getFullYear()}年${month}月${day}日 ${weekDay}`
+}
+
+const toggleGroup = (dateKey: string) => {
+  expandedGroups.value[dateKey] = !expandedGroups.value[dateKey]
 }
 
 const editDailyPlan = (plan: DailyPlan) => {
@@ -193,9 +254,15 @@ watch(() => props.dailyPlans, (newPlans) => {
 }, { deep: true })
 
 const handleDragEnd = async () => {
+  // 扁平化分组后的数据
+  const allPlans: DailyPlan[] = []
+  Object.values(groupedDailyPlans.value).forEach(group => {
+    allPlans.push(...group)
+  })
+  
   loading.value = true
   try {
-    const sortOrderList = localDailyPlans.value.map((plan, index) => ({
+    const sortOrderList = allPlans.map((plan, index) => ({
       id: plan.id,
       sortOrder: index
     }))
@@ -222,6 +289,63 @@ const handleDragEnd = async () => {
   padding: 40px 0;
 }
 
+.date-group {
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.date-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(90deg, #ecf5ff 0%, #f5f7fa 100%);
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  user-select: none;
+  border-left: 4px solid #409eff;
+}
+
+.toggle-icon {
+  font-size: 12px;
+  color: #606266;
+  transition: transform 0.2s;
+  width: 20px;
+  text-align: center;
+}
+
+.date-title {
+  font-weight: 600;
+  color: #303133;
+  font-size: 14px;
+}
+
+.date-count {
+  font-size: 12px;
+  color: #909399;
+  margin-left: auto;
+  padding: 2px 8px;
+  background: #e6f7ff;
+  border-radius: 10px;
+}
+
+.date-content {
+  position: relative;
+  background-color: #fafafa;
+  padding: 8px 12px 8px 32px;
+  border-radius: 0 0 8px 8px;
+  border-left: 4px solid #409eff;
+}
+
+.timeline-line {
+  position: absolute;
+  left: 28px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #d9ecff;
+}
+
 .daily-item {
   padding: 12px 15px;
   margin-bottom: 8px;
@@ -233,6 +357,7 @@ const handleDragEnd = async () => {
   align-items: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .daily-item:hover {
@@ -245,6 +370,18 @@ const handleDragEnd = async () => {
   border-left-color: #faad14;
   box-shadow: 0 2px 8px rgba(250, 173, 20, 0.3);
   transform: translateX(4px);
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -27px;
+  top: 20px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #409eff;
+  border: 2px solid #fff;
+  z-index: 1;
 }
 
 .daily-content {
