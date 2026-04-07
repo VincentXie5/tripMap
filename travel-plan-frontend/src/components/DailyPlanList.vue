@@ -83,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, watch, nextTick, computed } from 'vue'
+import { defineProps, defineEmits, ref, watch, nextTick, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import draggable from 'vuedraggable'
 import { updateDailyPlan, deleteDailyPlan as deleteDailyPlanApi, updateDailyPlanSort } from '../api/travelApi'
@@ -276,6 +276,25 @@ const handleDragEnd = async () => {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  // 监听全局编辑事件
+  window.addEventListener('edit-daily-plan', (e: any) => {
+    const plan = e.detail
+    editDailyPlan(plan)
+  })
+
+  // 监听全局删除事件
+  window.addEventListener('delete-daily-plan', (e: any) => {
+    const plan = e.detail
+    deleteDailyPlan(plan)
+  })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('edit-daily-plan', () => {})
+  window.removeEventListener('delete-daily-plan', () => {})
+})
 </script>
 
 <style scoped>

@@ -174,6 +174,36 @@ const handleMapClick = () => {
   highlightedDate.value = null
 }
 
+// 编辑行程
+const handleEditPlan = (planId: number) => {
+  const plan = dailyPlans.value.find(p => p.id === planId)
+  if (plan) {
+    highlightedDailyPlanId.value = planId
+    // 触发DailyPlanList的编辑事件
+    const editEvent = new CustomEvent('edit-daily-plan', { detail: plan })
+    window.dispatchEvent(editEvent)
+  }
+}
+
+// 删除行程
+const handleDeletePlan = (planId: number) => {
+  const plan = dailyPlans.value.find(p => p.id === planId)
+  if (plan) {
+    const deleteEvent = new CustomEvent('delete-daily-plan', { detail: plan })
+    window.dispatchEvent(deleteEvent)
+  }
+}
+
+// 定位行程
+const handleLocatePlan = (planId: number) => {
+  // 触发高亮，地图组件会自动居中到该点位
+  highlightedDailyPlanId.value = planId
+  const plan = dailyPlans.value.find(p => p.id === planId)
+  if (plan) {
+    highlightedDate.value = plan.planDate
+  }
+}
+
 onMounted(() => {
   loadPlans()
 })
@@ -219,6 +249,9 @@ onMounted(() => {
         @marker-click="handleMarkerClick"
         @route-click="handleRouteClick"
         @map-click="handleMapClick"
+        @edit-plan="handleEditPlan"
+        @delete-plan="handleDeletePlan"
+        @locate-plan="handleLocatePlan"
       />
     </div>
   </div>

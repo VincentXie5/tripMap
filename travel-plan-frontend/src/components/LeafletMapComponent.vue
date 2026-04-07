@@ -19,6 +19,7 @@ interface DailyPlan {
   sortOrder?: number
   latitude?: number | null
   longitude?: number | null
+  remark?: string
 }
 
 interface RouteLine {
@@ -34,7 +35,7 @@ const props = defineProps<{
   highlightedDate?: string | null
 }>()
 
-const emit = defineEmits(['marker-click', 'map-click', 'route-click'])
+const emit = defineEmits(['marker-click', 'map-click', 'route-click', 'edit-plan', 'delete-plan', 'locate-plan'])
 
 const mapContainer = ref<HTMLElement | null>(null)
 const loading = ref(true)
@@ -81,23 +82,79 @@ const clearMarkers = () => {
 }
 
 // 添加标记点
-const addMarker = (lat: number, lng: number, location: string, time: string, planId: number) => {
-  if (!map) return
+const addMarker = (plan: DailyPlan) => {
+  if (!map || !plan.latitude || !plan.longitude) return
 
-  const marker = L.marker([lat, lng])
+  const marker = L.marker([plan.latitude, plan.longitude])
     .addTo(map)
-    .bindPopup(`
-      <div class="marker-popup">
-        <strong>${time ? time + ' ' : ''}${location}</strong>
+    .bindPopup(L.popup({
+      maxWidth: 300,
+      minWidth: 240,
+      className: 'custom-marker-popup',
+      autoPan: true,
+      autoPanPadding: [50, 50],
+      closeOnClick: false
+    }))
+
+  // 构建弹窗内容
+  const buildPopupContent = () => {
+    const timeStr = plan.time ? plan.time.substring(0, 5) : ''
+    let html = '<div class="popup-content">'
+    
+    if (timeStr) {
+      html += `<div class="popup-time">${timeStr}</div>`
+    }
+    
+    html += `<div class="popup-location">${plan.location}</div>`
+    
+    if (plan.remark) {
+      html += `<div class="popup-remark">${plan.remark}</div>`
+    }
+    
+    html += `
+      <div class="popup-actions">
+        <button class="popup-btn popup-btn-edit" data-action="edit" data-id="${plan.id}">编辑</button>
+        <button class="popup-btn popup-btn-delete" data-action="delete" data-id="${plan.id}">删除</button>
+        <button class="popup-btn popup-btn-locate" data-action="locate" data-id="${plan.id}">行程</button>
       </div>
-    `)
+    </div>`
+    
+    return html
+  }
+
+  marker.setPopupContent(buildPopupContent())
 
   marker.on('click', () => {
-    emit('marker-click', planId)
+    emit('marker-click', plan.id)
+  })
+
+  // 弹窗打开后绑定按钮事件
+  marker.on('popupopen', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.custom-marker-popup .popup-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement
+          const action = target.dataset.action
+          const id = Number(target.dataset.id)
+          
+          marker.closePopup()
+          
+          if (action === 'edit') {
+            emit('edit-plan', id)
+          } else if (action === 'delete') {
+            emit('delete-plan', id)
+          } else if (action === 'locate') {
+            emit('locate-plan', id)
+          }
+          
+          e.stopPropagation()
+        })
+      })
+    }, 10)
   })
 
   // 存储planId到marker
-  ;(marker as any).planId = planId
+  ;(marker as any).planId = plan.id
   markers.push(marker)
 }
 
@@ -119,7 +176,7 @@ const updateMarkers = () => {
   // 直接使用后端返回的经纬度
   props.dailyPlans.forEach((plan) => {
     if (plan.location && plan.latitude && plan.longitude) {
-      addMarker(plan.latitude, plan.longitude, plan.location, plan.time, plan.id)
+      addMarker(plan)
       validPositions.push([plan.latitude, plan.longitude])
     }
   })
@@ -285,7 +342,7 @@ const highlightRoute = (date: string | null) => {
       })
       
       // 地图居中到路线中心点
-      if (coords.length > 0 && map) {
+      if (route.coords.length > 0 && map) {
         const bounds = L.latLngBounds(route.coords)
         map.fitBounds(bounds, { padding: [50, 50] })
       }
@@ -321,13 +378,22 @@ watch(() => props.highlightedDate, (newDate) => {
   }
 })
 
+// ESC键关闭弹窗
+const handleEscKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && map) {
+    map.closePopup()
+  }
+}
+
 onMounted(() => {
   initMap()
   updateMarkers()
   drawRoutes()
+  document.addEventListener('keydown', handleEscKey)
 })
 
 onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscKey)
   // 销毁地图
   if (map) {
     map.remove()
@@ -371,7 +437,91 @@ onUnmounted(() => {
   border-radius: 8px;
 }
 
-:deep(.leaflet-popup-content) {
-  margin: 10px 12px;
+:deep(.custom-marker-popup .leaflet-popup-content-wrapper) {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 0;
+}
+
+:deep(.custom-marker-popup .leaflet-popup-content) {
+  margin: 0;
+  min-width: 240px;
+}
+
+:deep(.custom-marker-popup .popup-content) {
+  padding: 16px;
+}
+
+:deep(.custom-marker-popup .popup-time) {
+  font-size: 13px;
+  color: #409eff;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+:deep(.custom-marker-popup .popup-location) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+:deep(.custom-marker-popup .popup-remark) {
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #ebeef5;
+}
+
+:deep(.custom-marker-popup .popup-actions) {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ebeef5;
+}
+
+:deep(.custom-marker-popup .popup-btn) {
+  flex: 1;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+:deep(.custom-marker-popup .popup-btn-edit) {
+  background-color: #409eff;
+  color: white;
+}
+
+:deep(.custom-marker-popup .popup-btn-edit:hover) {
+  background-color: #66b1ff;
+}
+
+:deep(.custom-marker-popup .popup-btn-delete) {
+  background-color: #f56c6c;
+  color: white;
+}
+
+:deep(.custom-marker-popup .popup-btn-delete:hover) {
+  background-color: #f78989;
+}
+
+:deep(.custom-marker-popup .popup-btn-locate) {
+  background-color: #67c23a;
+  color: white;
+}
+
+:deep(.custom-marker-popup .popup-btn-locate:hover) {
+  background-color: #85ce61;
+}
+
+:deep(.leaflet-popup-tip-container) {
+  transition: transform 0.15s ease-out;
 }
 </style>
