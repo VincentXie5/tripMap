@@ -4,6 +4,24 @@
     <div v-if="loading" class="map-loading">
       <span>地图加载中...</span>
     </div>
+    <button 
+      class="fullscreen-btn" 
+      @click="toggleFullscreen"
+      :title="isFullscreen ? '退出全屏' : '全屏显示'"
+    >
+      <svg v-if="!isFullscreen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <polyline points="9 21 3 21 3 15"></polyline>
+        <line x1="21" y1="3" x2="14" y2="10"></line>
+        <line x1="3" y1="21" x2="10" y2="14"></line>
+      </svg>
+      <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="4 14 10 14 10 20"></polyline>
+        <polyline points="20 10 14 10 14 4"></polyline>
+        <line x1="14" y1="10" x2="21" y2="3"></line>
+        <line x1="10" y1="14" x2="3" y2="21"></line>
+      </svg>
+    </button>
   </div>
 </template>
 
@@ -39,6 +57,7 @@ const emit = defineEmits(['marker-click', 'map-click', 'route-click', 'edit-plan
 
 const mapContainer = ref<HTMLElement | null>(null)
 const loading = ref(true)
+const isFullscreen = ref(false)
 let map: L.Map | null = null
 let markers: L.Marker[] = []
 let routeLines: RouteLine[] = []
@@ -378,6 +397,29 @@ watch(() => props.highlightedDate, (newDate) => {
   }
 })
 
+// 全屏切换
+const toggleFullscreen = async () => {
+  if (!mapContainer.value) return
+  
+  if (!document.fullscreenElement) {
+    await mapContainer.value.requestFullscreen()
+  } else {
+    await document.exitFullscreen()
+  }
+}
+
+// 全屏状态变化监听
+const handleFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement
+  
+  // 地图重绘，避免尺寸变化后出现偏移
+  if (map) {
+    setTimeout(() => {
+      map?.invalidateSize({ animate: false })
+    }, 100)
+  }
+}
+
 // ESC键关闭弹窗
 const handleEscKey = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && map) {
@@ -390,10 +432,12 @@ onMounted(() => {
   updateMarkers()
   drawRoutes()
   document.addEventListener('keydown', handleEscKey)
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleEscKey)
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
   // 销毁地图
   if (map) {
     map.remove()
@@ -426,6 +470,48 @@ onUnmounted(() => {
   background-color: rgba(255, 255, 255, 0.8);
   font-size: 16px;
   color: #666;
+  z-index: 1000;
+}
+
+.fullscreen-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1001;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.fullscreen-btn:hover {
+  background-color: #f5f7fa;
+  color: #409eff;
+  transform: scale(1.05);
+}
+
+:global(body:fullscreen) .map-wrapper {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+}
+
+:global(body:fullscreen) .map-container {
+  width: 100vw;
+  height: 100vh;
 }
 
 :deep(.marker-popup) {
