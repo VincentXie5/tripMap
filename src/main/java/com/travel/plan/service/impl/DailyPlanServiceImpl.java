@@ -1,6 +1,7 @@
 package com.travel.plan.service.impl;
 
 import com.travel.plan.entity.DailyPlan;
+import com.travel.plan.entity.TravelPlan;
 import com.travel.plan.repository.DailyPlanRepository;
 import com.travel.plan.service.DailyPlanService;
 import com.travel.plan.service.GeocodeService;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +26,8 @@ public class DailyPlanServiceImpl implements DailyPlanService {
 
     @Override
     public DailyPlan createDailyPlan(DailyPlan dailyPlan) {
+        // 日期校验：必须在旅行计划时间范围内
+        validatePlanDate(dailyPlan);
         // 自动地理编码
         autoGeocode(dailyPlan);
         return dailyPlanRepository.save(dailyPlan);
@@ -54,6 +58,9 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                 plan.setLongitude(null);
                 autoGeocode(plan);
             }
+            
+            // 日期校验：必须在旅行计划时间范围内
+            validatePlanDate(plan);
             
             return dailyPlanRepository.save(plan);
         }
@@ -97,6 +104,27 @@ public class DailyPlanServiceImpl implements DailyPlanService {
             if (coords != null && coords.length == 2) {
                 dailyPlan.setLatitude(coords[0]);
                 dailyPlan.setLongitude(coords[1]);
+            }
+        }
+    }
+
+    /**
+     * 日期校验：行程日期必须在旅行计划时间范围内
+     * @param dailyPlan 每日行程
+     */
+    private void validatePlanDate(DailyPlan dailyPlan) {
+        TravelPlan travelPlan = dailyPlan.getTravelPlan();
+        if (travelPlan != null) {
+            LocalDate planDate = dailyPlan.getPlanDate();
+            LocalDate startDate = travelPlan.getStartDate();
+            LocalDate endDate = travelPlan.getEndDate();
+            
+            if (planDate != null && startDate != null && endDate != null) {
+                if (planDate.isBefore(startDate) || planDate.isAfter(endDate)) {
+                    throw new IllegalArgumentException(
+                        "行程日期必须在旅行计划时间范围内 (" + startDate + " - " + endDate + ")"
+                    );
+                }
             }
         }
     }

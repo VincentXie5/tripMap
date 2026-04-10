@@ -236,6 +236,8 @@ onMounted(() => {
       <DailyPlanForm 
         v-if="selectedPlan"
         :plan-id="selectedPlan.id"
+        :start-date="selectedPlan.startDate"
+        :end-date="selectedPlan.endDate"
         @daily-added="handleDailyAdded" 
       />
     </div>

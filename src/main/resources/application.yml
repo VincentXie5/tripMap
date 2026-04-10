@@ -2,15 +2,18 @@
   port: 8080
 
 spring:
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-    database:
-      url: jdbc:h2:mem:testdb
-      driverClassName: org.h2.Driver
-      username: sa
-      password:
+  datasource:
+    url: jdbc:mysql://localhost:3306/tripMap?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: tripMap
+    password: [REDACTED]
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
 
 logging:
   level:
