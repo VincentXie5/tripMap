@@ -13,6 +13,7 @@
           value-format="YYYY-MM-DD"
           style="width: 100%"
           :teleported="false"
+          :disabled-date="disabledDate"
         />
       </el-form-item>
       <el-form-item label="时间" prop="time">
@@ -94,7 +95,43 @@ import { addDailyPlan, searchLocations } from '../api/travelApi'
 
 const props = defineProps<{
   planId: number
+  startDate?: string
+  endDate?: string
 }>()
+
+// 计算日期选择器禁用日期
+const disabledDate = (time: Date) => {
+  const startStr = props.startDate
+  const endStr = props.endDate
+  if (!startStr || !endStr) return false
+  try {
+    // 使用本地日期，避免时区问题
+    const year = time.getFullYear()
+    const month = time.getMonth()
+    const day = time.getDate()
+    
+    // 解析开始和结束日期的年月日
+    const startParts = startStr.split('-')
+    const startYear = parseInt(startParts[0])
+    const startMonth = parseInt(startParts[1]) - 1
+    const startDay = parseInt(startParts[2])
+    
+    const endParts = endStr.split('-')
+    const endYear = parseInt(endParts[0])
+    const endMonth = parseInt(endParts[1]) - 1
+    const endDay = parseInt(endParts[2])
+    
+    // 比较年月日
+    const dateNum = year * 10000 + month * 100 + day
+    const startNum = startYear * 10000 + startMonth * 100 + startDay
+    const endNum = endYear * 10000 + endMonth * 100 + endDay
+    
+    // 禁用范围外的日期
+    return dateNum < startNum || dateNum > endNum
+  } catch {
+    return false
+  }
+}
 
 const emit = defineEmits(['daily-added'])
 
@@ -233,7 +270,7 @@ const handleFocus = () => {
 
 // 关键词高亮
 const highlightKeyword = (text: string, keyword: string) => {
-  if (!keyword) return text
+  if (!keyword || !text) return text || ''
   const regex = new RegExp(`(${keyword})`, 'gi')
   return text.replace(regex, '<span class="highlight">$1</span>')
 }
@@ -256,15 +293,15 @@ const submitForm = async () => {
   await formRef.value.validate(async (valid: boolean) => {
     if (valid) {
       loading.value = true
-      try {
-        const data = {
-          travelPlan: { id: props.planId },
-          planDate: form.planDate,
-          time: form.time,
-          location: form.location,
-          remark: form.remark,
-          tag: form.tag
-        }
+        try {
+          const data: any = {
+            travelPlan: { id: props.planId },
+            planDate: form.planDate,
+            time: form.time,
+            location: form.location,
+            remark: form.remark,
+            tag: form.tag
+          }
         await addDailyPlan(data)
         ElMessage.success('行程添加成功！')
         resetForm()
