@@ -143,7 +143,30 @@
           <el-time-picker v-model="editForm.time" placeholder="选择时间" value-format="HH:mm:ss" style="width: 100%" />
         </el-form-item>
         <el-form-item label="行程地点">
-          <el-input v-model="editForm.location" placeholder="请输入地点" />
+          <div class="location-search-wrapper">
+            <el-input
+              v-model="editForm.location"
+              placeholder="请输入地点"
+              @input="handleEditLocationInput"
+              @keydown="handleEditKeydown"
+            />
+            <div 
+              v-if="editShowDropdown && editSuggestionList.length > 0" 
+              class="location-dropdown"
+            >
+              <div 
+                v-for="(item, index) in editSuggestionList" 
+                :key="index"
+                class="location-dropdown-item"
+                :class="{ active: editActiveIndex === index }"
+                @click="selectEditLocation(item)"
+                @mouseenter="editActiveIndex = index"
+              >
+                <div class="location-name" v-html="highlightKeyword(item.name, editSearchKeyword)"></div>
+                <div class="location-address" v-if="item.address">{{ item.address }}</div>
+              </div>
+            </div>
+          </div>
         </el-form-item>
         <el-form-item label="行程标签">
           <el-radio-group v-model="editForm.tag" size="small">
@@ -426,6 +449,98 @@ const editForm = ref({
   remark: '',
   tag: 0
 })
+
+// 编辑弹窗搜索联想相关状态
+const editSuggestionList = ref<any[]>([])
+const editShowDropdown = ref(false)
+const editActiveIndex = ref(0)
+const editSearchKeyword = ref('')
+let editDebounceTimer: any = null
+
+// 编辑弹窗地点输入处理
+const handleEditLocationInput = (value: string) => {
+  editSearchKeyword.value = value
+  clearTimeout(editDebounceTimer)
+  
+  if (!value || value.length < 2) {
+    editSuggestionList.value = []
+    editShowDropdown.value = false
+    return
+  }
+
+  const cached = searchCache.get(value)
+  if (cached && Date.now() - cached.timestamp < CACHE_EXPIRE_MS) {
+    editSuggestionList.value = cached.data
+    editActiveIndex.value = 0
+    editShowDropdown.value = true
+    return
+  }
+
+  editDebounceTimer = setTimeout(() => {
+    fetchEditLocationSuggestions(value)
+  }, 800)
+}
+
+const fetchEditLocationSuggestions = async (keyword: string) => {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(keyword)}&limit=5`)
+    const data = await res.json()
+    if (Array.isArray(data)) {
+      editSuggestionList.value = data.map((item: any) => ({
+        name: item.display_name.split(',')[0] || item.display_name,
+        address: item.display_name,
+        lat: item.lat,
+        lon: item.lon
+      }))
+      editActiveIndex.value = 0
+      editShowDropdown.value = true
+      
+      if (searchCache.size >= CACHE_MAX_SIZE) {
+        const firstKey = searchCache.keys().next().value
+        searchCache.delete(firstKey)
+      }
+      searchCache.set(keyword, {
+        data: editSuggestionList.value,
+        timestamp: Date.now()
+      })
+    }
+  } catch (error) {
+    console.debug('地点搜索接口请求失败', error)
+    editSuggestionList.value = []
+    editShowDropdown.value = false
+  }
+}
+
+const selectEditLocation = (item: any) => {
+  editForm.value.location = item.name
+  editSuggestionList.value = []
+  editShowDropdown.value = false
+}
+
+const handleEditKeydown = (e: KeyboardEvent) => {
+  if (!editShowDropdown.value || editSuggestionList.value.length === 0) return
+
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault()
+      editActiveIndex.value = Math.min(editActiveIndex.value + 1, editSuggestionList.value.length - 1)
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      editActiveIndex.value = Math.max(editActiveIndex.value - 1, 0)
+      break
+    case 'Enter':
+      e.preventDefault()
+      if (editActiveIndex.value >= 0 && editActiveIndex.value < editSuggestionList.value.length) {
+        selectEditLocation(editSuggestionList.value[editActiveIndex.value])
+      }
+      break
+    case 'Escape':
+      e.preventDefault()
+      editShowDropdown.value = false
+      break
+  }
+}
 
 const dailyItemRefs = ref<Record<number, HTMLElement>>({})
 const localDailyPlans = ref<DailyPlan[]>([...props.dailyPlans])
