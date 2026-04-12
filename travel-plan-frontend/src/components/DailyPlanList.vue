@@ -1,10 +1,15 @@
 <template>
   <el-card class="daily-plan-card">
     <template #header>
-      <span>每日行程 - {{ planTitle }}</span>
+      <div class="header-wrapper">
+        <span>每日行程 - {{ planTitle }}</span>
+        <el-button type="primary" size="small" @click="openAddDialog">
+          + 添加行程
+        </el-button>
+      </div>
     </template>
     <div v-if="dailyPlans.length === 0" class="empty-tip">
-      暂无行程安排，请添加当日行程
+      暂无行程安排，请点击上方"添加行程"按钮添加
     </div>
     <el-scrollbar v-else height="400px">
       <div v-for="(group, dateKey) in groupedDailyPlans" :key="dateKey" class="date-group">
@@ -51,6 +56,82 @@
         </div>
       </div>
     </el-scrollbar>
+
+    <!-- 添加行程弹窗 -->
+    <el-dialog v-model="addDialogVisible" title="添加每日行程" width="400px">
+      <el-form :model="addForm" :rules="addRules" ref="addFormRef" label-width="80px">
+        <el-form-item label="行程日期" prop="planDate">
+          <el-date-picker
+            v-model="addForm.planDate"
+            type="date"
+            placeholder="选择日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+            :disabled-date="disabledDate"
+          />
+        </el-form-item>
+        <el-form-item label="行程时间" prop="time">
+          <el-time-picker
+            v-model="addForm.time"
+            placeholder="选择时间"
+            format="HH:mm"
+            value-format="HH:mm:ss"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="行程地点" prop="location">
+          <div class="location-search-wrapper">
+            <el-input
+              v-model="addForm.location"
+              placeholder="请输入地点"
+              @input="handleLocationInput"
+              @keydown="handleKeydown"
+            />
+            <div 
+              v-if="showDropdown && suggestionList.length > 0" 
+              class="location-dropdown"
+            >
+              <div 
+                v-for="(item, index) in suggestionList" 
+                :key="index"
+                class="location-dropdown-item"
+                :class="{ active: activeIndex === index }"
+                @click="selectLocation(item)"
+                @mouseenter="activeIndex = index"
+              >
+                <div class="location-name" v-html="highlightKeyword(item.name, searchKeyword)"></div>
+                <div class="location-address" v-if="item.address">{{ item.address }}</div>
+              </div>
+            </div>
+          </div>
+        </el-form-item>
+        <el-form-item label="行程标签">
+          <el-radio-group v-model="addForm.tag" size="small">
+            <el-radio :label="0">无标签</el-radio>
+            <el-radio :label="1">🏛️ 景点</el-radio>
+            <el-radio :label="2">🍜 美食</el-radio>
+            <el-radio :label="3">🏨 住宿</el-radio>
+            <el-radio :label="4">🚗 交通</el-radio>
+            <el-radio :label="5">🛒 购物</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="行程备注">
+          <el-input
+            v-model="addForm.remark"
+            type="textarea"
+            :rows="3"
+            placeholder="行程备注、注意事项、交通信息等（可选）"
+            maxlength="1000"
+            show-word-limit
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitAdd" :loading="addLoading">确定添加</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 编辑行程弹窗 -->
     <el-dialog v-model="editDialogVisible" title="编辑每日行程" width="400px">
@@ -121,12 +202,220 @@ interface DailyPlan {
 const props = defineProps<{
   dailyPlans: DailyPlan[]
   planTitle: string
+  planId: number
+  planStartDate?: string
+  planEndDate?: string
   highlightedId?: number | null
   highlightedDate?: string | null
 }>()
 
-const emit = defineEmits(['daily-plan-updated', 'daily-plan-deleted', 'daily-plan-click'])
+const emit = defineEmits(['daily-plan-updated', 'daily-plan-deleted', 'daily-plan-click', 'daily-added'])
 
+// 添加行程弹窗
+const addDialogVisible = ref(false)
+const addFormRef = ref()
+const addLoading = ref(false)
+const addForm = ref({
+  planDate: '',
+  time: '',
+  location: '',
+  remark: '',
+  tag: 0
+})
+const addRules = {
+  planDate: [
+    { required: true, message: '请选择日期', trigger: 'change' }
+  ],
+  time: [
+    { required: true, message: '请选择时间', trigger: 'change' }
+  ],
+  location: [
+    { required: true, message: '请输入地点', trigger: 'blur' }
+  ]
+}
+
+// 搜索联想相关状态
+const suggestionList = ref<any[]>([])
+const showDropdown = ref(false)
+const activeIndex = ref(0)
+const searchKeyword = ref('')
+let debounceTimer: any = null
+let searchCache = new Map<string, any>()
+const CACHE_MAX_SIZE = 50
+const CACHE_EXPIRE_MS = 24 * 60 * 60 * 1000
+
+// 计算日期选择器禁用日期
+const disabledDate = (time: Date) => {
+  const startStr = props.planStartDate
+  const endStr = props.planEndDate
+  if (!startStr || !endStr) return false
+  try {
+    const year = time.getFullYear()
+    const month = time.getMonth()
+    const day = time.getDate()
+    
+    const startParts = startStr.split('-')
+    const startYear = parseInt(startParts[0])
+    const startMonth = parseInt(startParts[1]) - 1
+    const startDay = parseInt(startParts[2])
+    
+    const endParts = endStr.split('-')
+    const endYear = parseInt(endParts[0])
+    const endMonth = parseInt(endParts[1]) - 1
+    const endDay = parseInt(endParts[2])
+    
+    const dateNum = year * 10000 + month * 100 + day
+    const startNum = startYear * 10000 + startMonth * 100 + startDay
+    const endNum = endYear * 10000 + endMonth * 100 + endDay
+    
+    return dateNum < startNum || dateNum > endNum
+  } catch {
+    return false
+  }
+}
+
+// 打开添加弹窗
+const openAddDialog = () => {
+  addForm.value = {
+    planDate: '',
+    time: '',
+    location: '',
+    remark: '',
+    tag: 0
+  }
+  suggestionList.value = []
+  showDropdown.value = false
+  searchKeyword.value = ''
+  addDialogVisible.value = true
+}
+
+// 地点搜索输入处理
+const handleLocationInput = (value: string) => {
+  searchKeyword.value = value
+  clearTimeout(debounceTimer)
+  
+  if (!value || value.length < 2) {
+    suggestionList.value = []
+    showDropdown.value = false
+    return
+  }
+
+  const cached = searchCache.get(value)
+  if (cached && Date.now() - cached.timestamp < CACHE_EXPIRE_MS) {
+    suggestionList.value = cached.data
+    activeIndex.value = 0
+    showDropdown.value = true
+    return
+  }
+
+  debounceTimer = setTimeout(() => {
+    fetchLocationSuggestions(value)
+  }, 800)
+}
+
+const fetchLocationSuggestions = async (keyword: string) => {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(keyword)}&limit=5`)
+    const data = await res.json()
+    if (Array.isArray(data)) {
+      suggestionList.value = data.map((item: any) => ({
+        name: item.display_name.split(',')[0] || item.display_name,
+        address: item.display_name,
+        lat: item.lat,
+        lon: item.lon
+      }))
+      activeIndex.value = 0
+      showDropdown.value = true
+      
+      if (searchCache.size >= CACHE_MAX_SIZE) {
+        const firstKey = searchCache.keys().next().value
+        searchCache.delete(firstKey)
+      }
+      searchCache.set(keyword, {
+        data: suggestionList.value,
+        timestamp: Date.now()
+      })
+    }
+  } catch (error) {
+    console.debug('地点搜索接口请求失败', error)
+    suggestionList.value = []
+    showDropdown.value = false
+  }
+}
+
+const selectLocation = (item: any) => {
+  addForm.value.location = item.name
+  suggestionList.value = []
+  showDropdown.value = false
+}
+
+const handleKeydown = (e: KeyboardEvent) => {
+  if (!showDropdown.value || suggestionList.value.length === 0) return
+
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault()
+      activeIndex.value = Math.min(activeIndex.value + 1, suggestionList.value.length - 1)
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      activeIndex.value = Math.max(activeIndex.value - 1, 0)
+      break
+    case 'Enter':
+      e.preventDefault()
+      if (activeIndex.value >= 0 && activeIndex.value < suggestionList.value.length) {
+        selectLocation(suggestionList.value[activeIndex.value])
+      }
+      break
+    case 'Escape':
+      e.preventDefault()
+      showDropdown.value = false
+      break
+  }
+}
+
+const highlightKeyword = (text: string, keyword: string) => {
+  if (!keyword || !text) return text || ''
+  const regex = new RegExp(`(${keyword})`, 'gi')
+  return text.replace(regex, '<span class="highlight">$1</span>')
+}
+
+// 提交添加
+const submitAdd = async () => {
+  if (!addFormRef.value) return
+  
+  if (!props.planId) {
+    ElMessage.warning('请先选择一个旅行计划')
+    return
+  }
+  
+  await addFormRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      addLoading.value = true
+      try {
+        const { addDailyPlan } = await import('../api/travelApi')
+        await addDailyPlan({
+          travelPlan: { id: props.planId },
+          planDate: addForm.value.planDate,
+          time: addForm.value.time,
+          location: addForm.value.location,
+          remark: addForm.value.remark,
+          tag: addForm.value.tag
+        })
+        ElMessage.success('行程添加成功！')
+        addDialogVisible.value = false
+        emit('daily-added')
+      } catch (error) {
+        ElMessage.error('添加失败，请重试')
+        console.error(error)
+      } finally {
+        addLoading.value = false
+      }
+    }
+  })
+}
+
+// 编辑弹窗
 const editDialogVisible = ref(false)
 const editForm = ref({
   id: 0,
@@ -328,10 +617,69 @@ onUnmounted(() => {
   margin-bottom: 20px;
 }
 
+.header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .empty-tip {
   text-align: center;
   color: #909399;
   padding: 40px 0;
+}
+
+.location-search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.location-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.location-dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f7fa;
+}
+
+.location-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.location-dropdown-item:hover,
+.location-dropdown-item.active {
+  background-color: #ecf5ff;
+}
+
+.location-name {
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.4;
+}
+
+.location-address {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+:deep(.highlight) {
+  color: #409eff;
+  font-weight: 600;
 }
 
 .date-group {

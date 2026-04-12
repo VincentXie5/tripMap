@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import TravelPlanForm from './components/TravelPlanForm.vue'
 import PlanList from './components/PlanList.vue'
 import DailyPlanList from './components/DailyPlanList.vue'
-import DailyPlanForm from './components/DailyPlanForm.vue'
 import LeafletMapComponent from './components/LeafletMapComponent.vue'
 import { getPlanList, getDailyPlanList } from './api/travelApi.ts'
 
@@ -213,7 +211,6 @@ onMounted(() => {
   <div class="app-container">
     <!-- 左侧面板 40% -->
     <div class="left-panel">
-      <TravelPlanForm @plan-created="handlePlanCreated" />
       <PlanList 
         ref="planListRef"
         :plans="plans" 
@@ -221,24 +218,22 @@ onMounted(() => {
         @plan-selected="handlePlanSelected"
         @plan-updated="handlePlanUpdated"
         @plan-deleted="handlePlanDeleted"
+        @plan-created="handlePlanCreated"
         @export-markdown="handleExportMarkdown"
       />
       <DailyPlanList 
         v-if="selectedPlan"
         :daily-plans="dailyPlans" 
         :plan-title="selectedPlan.title"
+        :plan-start-date="selectedPlan.startDate"
+        :plan-end-date="selectedPlan.endDate"
+        :plan-id="selectedPlan.id"
         :highlighted-id="highlightedDailyPlanId"
         :highlighted-date="highlightedDate"
         @daily-plan-updated="handleDailyPlanUpdated"
         @daily-plan-deleted="handleDailyPlanDeleted"
         @daily-plan-click="handleDailyPlanClick"
-      />
-      <DailyPlanForm 
-        v-if="selectedPlan"
-        :plan-id="selectedPlan.id"
-        :start-date="selectedPlan.startDate"
-        :end-date="selectedPlan.endDate"
-        @daily-added="handleDailyAdded" 
+        @daily-added="handleDailyAdded"
       />
     </div>
     
