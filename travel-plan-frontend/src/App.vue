@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import PlanList from './components/PlanList.vue'
 import DailyPlanList from './components/DailyPlanList.vue'
 import LeafletMapComponent from './components/LeafletMapComponent.vue'
@@ -25,6 +25,49 @@ const dailyPlans = ref<DailyPlan[]>([])
 const highlightedDailyPlanId = ref<number | null>(null)
 const highlightedDate = ref<string | null>(null)
 const planListRef = ref()
+
+// 左侧面板宽度控制
+const leftPanelWidth = ref(40)
+const isResizing = ref(false)
+const MIN_WIDTH = 20
+const MAX_WIDTH = 50
+
+// 开始调整大小
+const startResize = (e: MouseEvent) => {
+  isResizing.value = true
+  document.addEventListener('mousemove', onResize)
+  document.addEventListener('mouseup', stopResize)
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
+
+// 调整大小过程
+const onResize = (e: MouseEvent) => {
+  if (!isResizing.value) return
+  
+  const container = document.querySelector('.app-container') as HTMLElement
+  if (!container) return
+  
+  const containerRect = container.getBoundingClientRect()
+  const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100
+  
+  // 限制在 20%~50% 范围内
+  leftPanelWidth.value = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, newWidth))
+}
+
+// 停止调整大小
+const stopResize = () => {
+  isResizing.value = false
+  document.removeEventListener('mousemove', onResize)
+  document.removeEventListener('mouseup', stopResize)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+}
+
+onUnmounted(() => {
+  document.removeEventListener('mousemove', onResize)
+  document.removeEventListener('mouseup', stopResize)
+})
 
 // 加载所有旅行计划
 const loadPlans = async () => {
@@ -209,8 +252,8 @@ onMounted(() => {
 
 <template>
   <div class="app-container">
-    <!-- 左侧面板 40% -->
-    <div class="left-panel">
+    <!-- 左侧面板 -->
+    <div class="left-panel" :style="{ width: leftPanelWidth + '%' }">
       <PlanList 
         ref="planListRef"
         :plans="plans" 
@@ -237,7 +280,13 @@ onMounted(() => {
       />
     </div>
     
-    <!-- 右侧地图 60% -->
+    <!-- 可拖拽分隔条 -->
+    <div 
+      class="resize-handle"
+      @mousedown="startResize"
+    ></div>
+    
+    <!-- 右侧地图 -->
     <div class="right-panel">
       <LeafletMapComponent 
         :daily-plans="dailyPlans"
@@ -265,12 +314,36 @@ onMounted(() => {
 }
 
 .left-panel {
-  width: 40%;
   height: 100%;
   background-color: #f5f5f5;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  min-width: 20%;
+  max-width: 50%;
+  transition: width 0.1s ease;
+}
+
+.resize-handle {
+  width: 6px;
+  height: 100%;
+  background-color: #e0e0e0;
+  cursor: col-resize;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background-color: #409eff;
+}
+
+.right-panel {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  min-width: 50%;
 }
 
 .travel-plan-panel {
@@ -322,12 +395,6 @@ onMounted(() => {
 
 .itinerary-list li:hover {
   background-color: #e8f5e9;
-}
-
-.right-panel {
-  width: 60%;
-  height: 100%;
-  position: relative;
 }
 
 .map-container {

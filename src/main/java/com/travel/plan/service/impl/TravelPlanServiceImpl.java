@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,7 @@ public class TravelPlanServiceImpl implements TravelPlanService {
 
     @Override
     public TravelPlan createTravelPlan(TravelPlan travelPlan) {
+        validateDateRange(travelPlan.getStartDate(), travelPlan.getEndDate());
         return travelPlanRepository.save(travelPlan);
     }
 
@@ -35,6 +37,7 @@ public class TravelPlanServiceImpl implements TravelPlanService {
     public TravelPlan updateTravelPlan(Long id, TravelPlan travelPlan) {
         Optional<TravelPlan> existingPlan = travelPlanRepository.findById(id);
         if (existingPlan.isPresent()) {
+            validateDateRange(travelPlan.getStartDate(), travelPlan.getEndDate());
             TravelPlan plan = existingPlan.get();
             plan.setTitle(travelPlan.getTitle());
             plan.setStartDate(travelPlan.getStartDate());
@@ -54,5 +57,14 @@ public class TravelPlanServiceImpl implements TravelPlanService {
         }
         // 再删除旅行计划
         travelPlanRepository.deleteById(id);
+    }
+
+    /**
+     * 校验日期范围：结束日期必须大于等于开始日期
+     */
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("结束日期必须大于等于开始日期");
+        }
     }
 }

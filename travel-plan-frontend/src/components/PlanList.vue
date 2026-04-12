@@ -58,7 +58,14 @@
           <el-date-picker v-model="createForm.startDate" type="date" placeholder="选择开始日期" value-format="YYYY-MM-DD" style="width: 100%" />
         </el-form-item>
         <el-form-item label="结束日期" prop="endDate">
-          <el-date-picker v-model="createForm.endDate" type="date" placeholder="选择结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          <el-date-picker 
+            v-model="createForm.endDate" 
+            type="date" 
+            placeholder="选择结束日期" 
+            value-format="YYYY-MM-DD" 
+            style="width: 100%"
+            :disabled-date="disabledCreateEndDate"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -77,7 +84,14 @@
           <el-date-picker v-model="editForm.startDate" type="date" placeholder="选择开始日期" value-format="YYYY-MM-DD" style="width: 100%" />
         </el-form-item>
         <el-form-item label="结束日期">
-          <el-date-picker v-model="editForm.endDate" type="date" placeholder="选择结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          <el-date-picker 
+            v-model="editForm.endDate" 
+            type="date" 
+            placeholder="选择结束日期" 
+            value-format="YYYY-MM-DD" 
+            style="width: 100%"
+            :disabled-date="disabledEditEndDate"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -134,6 +148,20 @@ const editForm = ref({
   startDate: '',
   endDate: ''
 })
+
+// 创建弹窗的结束日期禁用逻辑
+const disabledCreateEndDate = (time: Date) => {
+  if (!createForm.startDate) return false
+  const startDateObj = new Date(createForm.startDate)
+  return time.getTime() < startDateObj.getTime()
+}
+
+// 编辑弹窗的结束日期禁用逻辑
+const disabledEditEndDate = (time: Date) => {
+  if (!editForm.value.startDate) return false
+  const startDateObj = new Date(editForm.value.startDate)
+  return time.getTime() < startDateObj.getTime()
+}
 
 // 打开创建弹窗
 const openCreateDialog = () => {
