@@ -17,6 +17,9 @@ interface DailyPlan {
   time: string
   location: string
   planDate: string
+  planId?: number
+  remark?: string
+  tag?: number
 }
 
 const plans = ref<Plan[]>([])
@@ -33,7 +36,7 @@ const MIN_WIDTH = 20
 const MAX_WIDTH = 50
 
 // 开始调整大小
-const startResize = (e: MouseEvent) => {
+const startResize = (_e: MouseEvent) => {
   isResizing.value = true
   document.addEventListener('mousemove', onResize)
   document.addEventListener('mouseup', stopResize)
@@ -72,8 +75,8 @@ onUnmounted(() => {
 // 加载所有旅行计划
 const loadPlans = async () => {
   try {
-    const response = await getPlanList()
-    plans.value = response.data
+    // 拦截器已返回data，直接使用
+    plans.value = await getPlanList()
   } catch (error) {
     console.error('加载计划列表失败:', error)
   }
@@ -83,8 +86,8 @@ const loadPlans = async () => {
 const handlePlanSelected = async (plan: Plan) => {
   selectedPlan.value = plan
   try {
-    const response = await getDailyPlanList(plan.id)
-    dailyPlans.value = response.data
+    // 拦截器已返回data，直接使用
+    dailyPlans.value = await getDailyPlanList(plan.id)
   } catch (error) {
     console.error('加载每日行程失败:', error)
     dailyPlans.value = []
@@ -195,8 +198,8 @@ const generateMarkdownContent = (plan: Plan, plans: DailyPlan[]) => {
 const handleExportMarkdown = async (plan: Plan) => {
   // 先加载该计划的所有行程
   try {
-    const response = await getDailyPlanList(plan.id)
-    const markdown = generateMarkdownContent(plan, response.data)
+    // 拦截器已返回data，直接使用
+    const markdown = generateMarkdownContent(plan, await getDailyPlanList(plan.id))
     
     // 触发PlanList组件显示导出弹窗
     // 通过ref调用子组件方法

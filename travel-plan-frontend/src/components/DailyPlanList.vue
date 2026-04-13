@@ -352,7 +352,7 @@ const fetchLocationSuggestions = async (keyword: string) => {
       
       if (searchCache.size >= CACHE_MAX_SIZE) {
         const firstKey = searchCache.keys().next().value
-        searchCache.delete(firstKey)
+        if (firstKey) searchCache.delete(firstKey)
       }
       searchCache.set(keyword, {
         data: suggestionList.value,
@@ -425,11 +425,9 @@ const submitAdd = async () => {
           remark: addForm.value.remark,
           tag: addForm.value.tag
         })
-        ElMessage.success('行程添加成功！')
         addDialogVisible.value = false
         emit('daily-added')
       } catch (error) {
-        ElMessage.error('添加失败，请重试')
         console.error(error)
       } finally {
         addLoading.value = false
@@ -497,7 +495,7 @@ const fetchEditLocationSuggestions = async (keyword: string) => {
       
       if (searchCache.size >= CACHE_MAX_SIZE) {
         const firstKey = searchCache.keys().next().value
-        searchCache.delete(firstKey)
+        if (firstKey) searchCache.delete(firstKey)
       }
       searchCache.set(keyword, {
         data: editSuggestionList.value,
@@ -630,11 +628,9 @@ const confirmEdit = async () => {
       remark: editForm.value.remark,
       tag: editForm.value.tag
     })
-    ElMessage.success('更新成功')
     editDialogVisible.value = false
     emit('daily-plan-updated')
   } catch (error) {
-    ElMessage.error('更新失败')
   }
 }
 
@@ -650,12 +646,8 @@ const deleteDailyPlan = async (plan: DailyPlan) => {
       }
     )
     await deleteDailyPlanApi(plan.id)
-    ElMessage.success('删除成功')
     emit('daily-plan-deleted')
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
   }
 }
 
@@ -697,10 +689,8 @@ const handleDragEnd = async () => {
       sortOrder: index
     }))
     await updateDailyPlanSort(props.dailyPlans[0]?.planId || 0, sortOrderList)
-    ElMessage.success('排序更新成功')
     emit('daily-plan-updated')
   } catch (error) {
-    ElMessage.error('排序更新失败')
     localDailyPlans.value = [...props.dailyPlans]
   } finally {
     loading.value = false

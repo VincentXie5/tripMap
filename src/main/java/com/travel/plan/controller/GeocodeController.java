@@ -1,14 +1,13 @@
 package com.travel.plan.controller;
 
+import com.travel.plan.common.ApiResult;
 import com.travel.plan.service.GeocodeService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -33,11 +32,11 @@ public class GeocodeController {
      * @return 地点建议列表，最多5条
      */
     @GetMapping("/search")
-    public ResponseEntity<List<Map<String, Object>>> searchLocations(@RequestParam String keyword) {
+    public ApiResult<List<Map<String, Object>>> searchLocations(@RequestParam String keyword) {
         log.info("地点搜索请求: {}", keyword);
         
         List<Map<String, Object>> results = geocodeService.searchLocations(keyword);
         
-        return ResponseEntity.ok(results);
+        return ApiResult.success(results);
     }
 }

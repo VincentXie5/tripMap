@@ -1,9 +1,9 @@
 package com.travel.plan.controller;
 
+import com.travel.plan.common.ApiResult;
 import com.travel.plan.entity.DailyPlan;
 import com.travel.plan.service.DailyPlanService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,32 +17,32 @@ public class DailyPlanController {
     private DailyPlanService dailyPlanService;
 
     @PostMapping
-    public ResponseEntity<DailyPlan> addDailyPlan(@RequestBody DailyPlan dailyPlan) {
+    public ApiResult<DailyPlan> addDailyPlan(@RequestBody DailyPlan dailyPlan) {
         DailyPlan createdPlan = dailyPlanService.createDailyPlan(dailyPlan);
-        return ResponseEntity.ok(createdPlan);
+        return ApiResult.success(createdPlan);
     }
 
     @GetMapping("/{planId}")
-    public ResponseEntity<List<DailyPlan>> getDailyPlansByTravelPlanId(@PathVariable Long planId) {
+    public ApiResult<List<DailyPlan>> getDailyPlansByTravelPlanId(@PathVariable Long planId) {
         List<DailyPlan> dailyPlans = dailyPlanService.getAllDailyPlansByTravelPlanId(planId);
-        return ResponseEntity.ok(dailyPlans);
+        return ApiResult.success(dailyPlans);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DailyPlan> updateDailyPlan(@PathVariable Long id, @RequestBody DailyPlan dailyPlan) {
+    public ApiResult<DailyPlan> updateDailyPlan(@PathVariable Long id, @RequestBody DailyPlan dailyPlan) {
         DailyPlan updatedPlan = dailyPlanService.updateDailyPlan(id, dailyPlan);
-        return ResponseEntity.ok(updatedPlan);
+        return ApiResult.success(updatedPlan);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDailyPlan(@PathVariable Long id) {
+    public ApiResult<Void> deleteDailyPlan(@PathVariable Long id) {
         dailyPlanService.deleteDailyPlan(id);
-        return ResponseEntity.ok().build();
+        return ApiResult.success("删除成功", null);
     }
 
     @PutMapping("/sort/{planId}")
-    public ResponseEntity<List<DailyPlan>> updateSortOrder(@PathVariable Long planId, @RequestBody List<Map<String, Object>> sortOrderList) {
+    public ApiResult<List<DailyPlan>> updateSortOrder(@PathVariable Long planId, @RequestBody List<Map<String, Object>> sortOrderList) {
         List<DailyPlan> updatedPlans = dailyPlanService.updateSortOrder(planId, sortOrderList);
-        return ResponseEntity.ok(updatedPlans);
+        return ApiResult.success(updatedPlans);
     }
 }

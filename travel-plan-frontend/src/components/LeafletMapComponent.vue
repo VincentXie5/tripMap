@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, defineProps, defineEmits, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, defineProps, defineEmits } from 'vue'
 import L from 'leaflet'
 
 // 标签颜色与标记图标映射表

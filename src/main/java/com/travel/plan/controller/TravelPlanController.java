@@ -1,9 +1,9 @@
 package com.travel.plan.controller;
 
+import com.travel.plan.common.ApiResult;
 import com.travel.plan.entity.TravelPlan;
 import com.travel.plan.service.TravelPlanService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,36 +16,26 @@ public class TravelPlanController {
     private TravelPlanService travelPlanService;
 
     @PostMapping
-    public ResponseEntity<TravelPlan> createTravelPlan(@RequestBody TravelPlan travelPlan) {
+    public ApiResult<TravelPlan> createTravelPlan(@RequestBody TravelPlan travelPlan) {
         TravelPlan createdPlan = travelPlanService.createTravelPlan(travelPlan);
-        return ResponseEntity.ok(createdPlan);
+        return ApiResult.success(createdPlan);
     }
 
     @GetMapping
-    public ResponseEntity<List<TravelPlan>> getAllTravelPlans() {
+    public ApiResult<List<TravelPlan>> getAllTravelPlans() {
         List<TravelPlan> travelPlans = travelPlanService.getAllTravelPlans();
-        return ResponseEntity.ok(travelPlans);
+        return ApiResult.success(travelPlans);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TravelPlan> updateTravelPlan(@PathVariable Long id, @RequestBody TravelPlan travelPlan) {
+    public ApiResult<TravelPlan> updateTravelPlan(@PathVariable Long id, @RequestBody TravelPlan travelPlan) {
         TravelPlan updatedPlan = travelPlanService.updateTravelPlan(id, travelPlan);
-        return ResponseEntity.ok(updatedPlan);
+        return ApiResult.success(updatedPlan);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTravelPlan(@PathVariable Long id) {
+    public ApiResult<Void> deleteTravelPlan(@PathVariable Long id) {
         travelPlanService.deleteTravelPlan(id);
-        return ResponseEntity.ok().build();
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(e.getMessage());
-    }
-
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
-        return ResponseEntity.badRequest().body(e.getMessage());
+        return ApiResult.success("删除成功", null);
     }
 }

@@ -113,10 +113,16 @@ interface Plan {
   startDate: string
   endDate: string
 }
-defineProps<{
-  plans: Plan[]
-  selectedPlanId: number | null
-}>();
+defineProps({
+  plans: {
+    type: Array as () => Plan[], // 类型断言为 Plan 数组
+    default: () => [] // 默认空数组
+  },
+  selectedPlanId: {
+    type: [Number, null],
+    default: null
+  }
+});
 const emit = defineEmits(['plan-selected', 'plan-updated', 'plan-deleted', 'plan-created', 'export-markdown'])
 
 // 创建计划弹窗
@@ -183,11 +189,9 @@ const submitCreate = async () => {
           startDate: createForm.startDate,
           endDate: createForm.endDate
         })
-        ElMessage.success('旅行计划创建成功！')
         createDialogVisible.value = false
         emit('plan-created')
       } catch (error) {
-        ElMessage.error('创建失败，请重试')
         console.error(error)
       } finally {
         createLoading.value = false
@@ -233,11 +237,9 @@ const confirmEdit = async () => {
       startDate: editForm.value.startDate,
       endDate: editForm.value.endDate
     })
-    ElMessage.success('更新成功')
     editDialogVisible.value = false
     emit('plan-updated')
   } catch (error) {
-    ElMessage.error('更新失败')
   }
 }
 
@@ -253,12 +255,8 @@ const deletePlan = async (plan: Plan) => {
       }
     )
     await deletePlanApi(plan.id)
-    ElMessage.success('删除成功')
     emit('plan-deleted')
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
   }
 }
 
