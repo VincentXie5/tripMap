@@ -106,13 +106,7 @@
 import { defineProps, defineEmits, ref, defineExpose, reactive } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { createPlan, updatePlan, deletePlan as deletePlanApi } from '../api/travelApi'
-
-interface Plan {
-  id: number
-  title: string
-  startDate: string
-  endDate: string
-}
+import type { Plan } from '../types/api'
 defineProps({
   plans: {
     type: Array as () => Plan[], // 类型断言为 Plan 数组

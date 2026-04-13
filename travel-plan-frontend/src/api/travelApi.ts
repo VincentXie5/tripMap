@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
-import type { ApiResponse } from '../types/api'
+import type { ApiResponse, Plan, DailyPlan } from '../types/api'
 
 // 创建axios实例
 const request: AxiosInstance = axios.create({
@@ -60,7 +60,7 @@ request.interceptors.response.use(
 export const createPlan = (data: { title: string; startDate: string; endDate: string }) => 
   request.post('/api/travelPlan', data)
 
-export const getPlanList = () => request.get('/api/travelPlan')
+export const getPlanList = (): Promise<Plan[]> => request.get('/api/travelPlan')
 
 export const updatePlan = (id: number, data: { title: string; startDate: string; endDate: string }) => 
   request.put(`/api/travelPlan/${id}`, data)
@@ -71,7 +71,7 @@ export const deletePlan = (id: number) => request.delete(`/api/travelPlan/${id}`
 export const addDailyPlan = (data: { travelPlan: { id: number }; time: string; location: string; planDate: string; remark?: string; tag?: number }) => 
   request.post('/api/dailyPlan', data)
 
-export const getDailyPlanList = (planId: number) => request.get(`/api/dailyPlan/${planId}`)
+export const getDailyPlanList = (planId: number): Promise<DailyPlan[]> => request.get(`/api/dailyPlan/${planId}`)
 
 export const updateDailyPlan = (id: number, data: { travelPlan: { id: number }; time: string; location: string; planDate: string; remark?: string; tag?: number }) => 
   request.put(`/api/dailyPlan/${id}`, data)
