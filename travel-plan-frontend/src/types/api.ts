@@ -14,6 +14,37 @@ export interface ApiResponse<T = any> {
 }
 
 /**
+ * 旅行计划实体（与后端 TravelPlan 对应）
+ */
+export interface Plan {
+  id: number
+  title: string
+  startDate: string
+  endDate: string
+}
+
+/**
+ * 每日行程实体（与后端 DailyPlan 对应）
+ */
+export interface DailyPlan {
+  id: number
+  travelPlan: {
+    id: number
+    title?: string
+    startDate?: string
+    endDate?: string
+  }
+  time: string
+  location: string
+  planDate: string
+  remark?: string
+  tag?: number
+  sortOrder?: number
+  latitude?: number
+  longitude?: number
+}
+
+/**
  * HTTP状态码枚举
  */
 export const HttpCode = {

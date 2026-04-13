@@ -202,6 +202,7 @@ import { defineProps, defineEmits, ref, watch, nextTick, computed, onMounted, on
 import { ElMessageBox, ElMessage } from 'element-plus'
 import draggable from 'vuedraggable'
 import { updateDailyPlan, deleteDailyPlan as deleteDailyPlanApi, updateDailyPlanSort } from '../api/travelApi'
+import type { DailyPlan } from '../types/api'
 
 const tagNames: Record<number, string> = {
   0: '无标签',
@@ -210,16 +211,6 @@ const tagNames: Record<number, string> = {
   3: '🏨 住宿',
   4: '🚗 交通',
   5: '🛒 购物'
-}
-
-interface DailyPlan {
-  id: number
-  time: string
-  location: string
-  planDate: string
-  planId?: number
-  remark?: string
-  tag?: number
 }
 
 const props = defineProps<{
@@ -608,7 +599,7 @@ const toggleGroup = (dateKey: string) => {
 const editDailyPlan = (plan: DailyPlan) => {
   editForm.value = {
     id: plan.id,
-    planId: plan.planId || 0,
+    planId: plan.travelPlan.id,
     planDate: plan.planDate,
     time: plan.time,
     location: plan.location,
@@ -688,7 +679,7 @@ const handleDragEnd = async () => {
       id: plan.id,
       sortOrder: index
     }))
-    await updateDailyPlanSort(props.dailyPlans[0]?.planId || 0, sortOrderList)
+    await updateDailyPlanSort(props.dailyPlans[0]?.travelPlan.id || 0, sortOrderList)
     emit('daily-plan-updated')
   } catch (error) {
     localDailyPlans.value = [...props.dailyPlans]

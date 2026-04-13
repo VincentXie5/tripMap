@@ -4,23 +4,7 @@ import PlanList from './components/PlanList.vue'
 import DailyPlanList from './components/DailyPlanList.vue'
 import LeafletMapComponent from './components/LeafletMapComponent.vue'
 import { getPlanList, getDailyPlanList } from './api/travelApi.ts'
-
-interface Plan {
-  id: number
-  title: string
-  startDate: string
-  endDate: string
-}
-
-interface DailyPlan {
-  id: number
-  time: string
-  location: string
-  planDate: string
-  planId?: number
-  remark?: string
-  tag?: number
-}
+import type { Plan, DailyPlan } from './types/api'
 
 const plans = ref<Plan[]>([])
 const selectedPlan = ref<Plan | null>(null)
