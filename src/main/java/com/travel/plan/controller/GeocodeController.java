@@ -3,6 +3,7 @@ package com.travel.plan.controller;
 import com.travel.plan.common.ApiResult;
 import com.travel.plan.service.GeocodeService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,12 +20,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/geocode")
 public class GeocodeController {
-
-    private final GeocodeService geocodeService;
-
-    public GeocodeController(GeocodeService geocodeService) {
-        this.geocodeService = geocodeService;
-    }
+    @Autowired
+    private GeocodeService geocodeService;
 
     /**
      * 地点搜索联想接口

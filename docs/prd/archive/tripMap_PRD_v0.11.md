@@ -758,5 +758,5 @@ npm run dev
 
 ### 11.2 相关文档
 
-- [tripMap 总PRD](./tripMap_PRD.md)
-- [v0.10 PRD](./tripMap_PRD_v0.10.md)
+- [tripMap 总PRD](../../tripMap_PRD.md)
+- [v0.10 PRD](tripMap_PRD_v0.10.md)
