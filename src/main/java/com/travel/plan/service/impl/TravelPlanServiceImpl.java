@@ -1,5 +1,7 @@
 package com.travel.plan.service.impl;
 
+import com.travel.plan.common.BusinessException;
+import com.travel.plan.common.code.TravelPlanCode;
 import com.travel.plan.entity.DailyPlan;
 import com.travel.plan.entity.TravelPlan;
 import com.travel.plan.repository.DailyPlanRepository;
@@ -44,7 +46,7 @@ public class TravelPlanServiceImpl implements TravelPlanService {
             plan.setEndDate(travelPlan.getEndDate());
             return travelPlanRepository.save(plan);
         }
-        throw new RuntimeException("TravelPlan not found with id: " + id);
+        throw new BusinessException(TravelPlanCode.NOT_FOUND, id);
     }
 
     @Override
@@ -64,7 +66,7 @@ public class TravelPlanServiceImpl implements TravelPlanService {
      */
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
-            throw new IllegalArgumentException("结束日期必须大于等于开始日期");
+            throw new BusinessException(TravelPlanCode.END_DATE_LARGER_THAN_START_DATE);
         }
     }
 }

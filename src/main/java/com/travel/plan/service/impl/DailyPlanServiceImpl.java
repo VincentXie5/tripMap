@@ -1,5 +1,7 @@
 package com.travel.plan.service.impl;
 
+import com.travel.plan.common.BusinessException;
+import com.travel.plan.common.code.DailyPlanCode;
 import com.travel.plan.entity.DailyPlan;
 import com.travel.plan.entity.TravelPlan;
 import com.travel.plan.repository.DailyPlanRepository;
@@ -64,7 +66,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
             
             return dailyPlanRepository.save(plan);
         }
-        throw new RuntimeException("DailyPlan not found with id: " + id);
+        throw new BusinessException(DailyPlanCode.NOT_FOUND, id);
     }
 
     @Override
@@ -121,9 +123,7 @@ public class DailyPlanServiceImpl implements DailyPlanService {
             
             if (planDate != null && startDate != null && endDate != null) {
                 if (planDate.isBefore(startDate) || planDate.isAfter(endDate)) {
-                    throw new IllegalArgumentException(
-                        "行程日期必须在旅行计划时间范围内 (" + startDate + " - " + endDate + ")"
-                    );
+                    throw new BusinessException(DailyPlanCode.DATE_MUST_IN_RANGE, startDate, endDate);
                 }
             }
         }

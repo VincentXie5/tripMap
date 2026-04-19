@@ -124,3 +124,7 @@ ALTER TABLE travel_plan ADD CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES 
 1. 邮件 SMTP 配置信息（开发/生产环境）
 2. 前端路由守卫具体实现方式
 3. 是否需要黑名单机制（限制频繁发送验证码）
+
+## 附录
+
+- [错误码设计](../docs/core/05_错误码设计.md)

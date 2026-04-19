@@ -1,5 +1,8 @@
 package com.travel.plan.common;
 
+import com.travel.plan.common.code.BaseCode;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -11,26 +14,22 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     /**
-     * 处理参数校验失败异常
+     * 处理业务异常
      */
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ApiResult<Void> handleIllegalArgument(IllegalArgumentException e) {
-        return ApiResult.badRequest(e.getMessage());
-    }
-
-    /**
-     * 处理运行时异常
-     */
-    @ExceptionHandler(RuntimeException.class)
-    public ApiResult<Void> handleRuntimeException(RuntimeException e) {
-        return ApiResult.error(500, e.getMessage());
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResult<Void>> handleBusinessException(BusinessException e) {
+        return ResponseEntity
+                .status(e.getHttpStatus())
+                .body(ApiResult.error(e.getCode(), e.getMessage()));
     }
 
     /**
      * 处理通用异常兜底
      */
     @ExceptionHandler(Exception.class)
-    public ApiResult<Void> handleException(Exception e) {
-        return ApiResult.error("服务器内部错误: " + e.getMessage());
+    public ResponseEntity<ApiResult<Void>> handleException(Exception e) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResult.error(BaseCode.SYSTEM_ERROR));
     }
 }

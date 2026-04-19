@@ -4,3 +4,6 @@
 /travel-plan-frontend/node_modules
 /travel-plan-frontend/dist
 /.idea
+/package.json
+/travel-plan-frontend/package-lock.json
+/package-lock.json
