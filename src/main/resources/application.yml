@@ -1,11 +1,12 @@
 ﻿server:
   port: 8080
-
 spring:
+  config:
+    import: optional:file:.env[.properties]
   datasource:
-    url: jdbc:mysql://localhost:3306/tripMap?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: tripMap
-    password: [REDACTED]
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -17,8 +18,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: xieyongsen5@gmail.com
-    password: [REDACTED]
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -30,10 +31,9 @@ spring:
           connectiontimeout: 5000
           writetimeout: 5000
 
-# JWT閰嶇疆
 jwt:
-  secret: [REDACTED]
-  expiration: 604800000  # 7澶╋紝鍗曚綅姣
+  secret: ${JWT_SECRET}
+  expiration: 604800000
 
 logging:
   level:
