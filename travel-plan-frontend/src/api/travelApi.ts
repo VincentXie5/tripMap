@@ -9,10 +9,13 @@ const request: AxiosInstance = axios.create({
   timeout: 5000
 })
 
-// 请求拦截器
+// 请求拦截器 - 添加Token
 request.interceptors.request.use(
   (config) => {
-    // 可在此处添加Token等通用请求头
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
     return config
   },
   (error) => {

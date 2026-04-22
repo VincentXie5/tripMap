@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface DailyPlanService {
-    DailyPlan createDailyPlan(DailyPlan dailyPlan);
+    DailyPlan createDailyPlan(Long userId, DailyPlan dailyPlan);
     List<DailyPlan> getAllDailyPlansByTravelPlanId(Long planId);
     DailyPlan updateDailyPlan(Long id, DailyPlan dailyPlan);
     void deleteDailyPlan(Long id);

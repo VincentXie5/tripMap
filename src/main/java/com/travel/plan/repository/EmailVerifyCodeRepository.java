@@ -14,6 +14,8 @@ public interface EmailVerifyCodeRepository extends JpaRepository<EmailVerifyCode
     
     Optional<EmailVerifyCode> findByEmailAndCodeAndType(String email, String code, EmailVerifyCode.VerifyType type);
     
+    Optional<EmailVerifyCode> findByEmailAndType(String email, EmailVerifyCode.VerifyType type);
+    
     @Modifying
     @Query("DELETE FROM EmailVerifyCode e WHERE e.email = :email AND e.type = :type")
     void deleteByEmailAndType(@Param("email") String email, @Param("type") EmailVerifyCode.VerifyType type);

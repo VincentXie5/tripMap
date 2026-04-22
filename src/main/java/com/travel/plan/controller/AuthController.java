@@ -2,6 +2,7 @@ package com.travel.plan.controller;
 
 import com.travel.plan.common.ApiResult;
 import com.travel.plan.controller.dto.AuthRequest;
+import com.travel.plan.controller.dto.ProfileResponse;
 import com.travel.plan.controller.dto.SendCodeRequest;
 import com.travel.plan.controller.dto.UserResponse;
 import com.travel.plan.entity.User;
@@ -54,10 +55,10 @@ public class AuthController {
      * 获取当前用户信息
      */
     @GetMapping("/me")
-    public ApiResult<UserResponse> getCurrentUser(org.springframework.security.core.Authentication authentication) {
+    public ApiResult<ProfileResponse> getCurrentUser(org.springframework.security.core.Authentication authentication) {
         com.travel.plan.config.UserPrincipal principal = (com.travel.plan.config.UserPrincipal) authentication.getPrincipal();
-        User user = userService.getUserById(principal.getUserId());
-        return ApiResult.success(toUserResponse(user));
+        ProfileResponse profile = userService.getProfile(principal.getUserId());
+        return ApiResult.success(profile);
     }
     
     private UserResponse toUserResponse(User user) {

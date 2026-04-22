@@ -36,7 +36,7 @@ public class EmailVerifyCode {
     }
     
     public enum VerifyType {
-        REGISTER, FORGET_PASSWORD
+        REGISTER, FORGET_PASSWORD, EMAIL_CHANGE
     }
     
     public boolean isExpired() {

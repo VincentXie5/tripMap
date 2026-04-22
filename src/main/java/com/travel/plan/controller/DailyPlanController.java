@@ -1,9 +1,12 @@
 package com.travel.plan.controller;
 
 import com.travel.plan.common.ApiResult;
+import com.travel.plan.config.UserPrincipal;
 import com.travel.plan.entity.DailyPlan;
 import com.travel.plan.service.DailyPlanService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,14 +14,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/dailyPlan")
+@RequiredArgsConstructor
 public class DailyPlanController {
 
-    @Autowired
-    private DailyPlanService dailyPlanService;
+    private final DailyPlanService dailyPlanService;
 
     @PostMapping
-    public ApiResult<DailyPlan> addDailyPlan(@RequestBody DailyPlan dailyPlan) {
-        DailyPlan createdPlan = dailyPlanService.createDailyPlan(dailyPlan);
+    public ApiResult<DailyPlan> addDailyPlan(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestBody DailyPlan dailyPlan) {
+        DailyPlan createdPlan = dailyPlanService.createDailyPlan(principal.getUserId(), dailyPlan);
         return ApiResult.success(createdPlan);
     }
 

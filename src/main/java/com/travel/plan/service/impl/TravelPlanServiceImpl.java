@@ -25,14 +25,15 @@ public class TravelPlanServiceImpl implements TravelPlanService {
     private DailyPlanRepository dailyPlanRepository;
 
     @Override
-    public TravelPlan createTravelPlan(TravelPlan travelPlan) {
+    public TravelPlan createTravelPlan(Long userId, TravelPlan travelPlan) {
         validateDateRange(travelPlan.getStartDate(), travelPlan.getEndDate());
+        travelPlan.setUserId(userId);
         return travelPlanRepository.save(travelPlan);
     }
 
     @Override
-    public List<TravelPlan> getAllTravelPlans() {
-        return travelPlanRepository.findAll();
+    public List<TravelPlan> getAllTravelPlansByUserId(Long userId) {
+        return travelPlanRepository.findByUserId(userId);
     }
 
     @Override

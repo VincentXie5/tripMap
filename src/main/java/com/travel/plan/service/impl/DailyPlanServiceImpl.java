@@ -2,9 +2,11 @@ package com.travel.plan.service.impl;
 
 import com.travel.plan.common.BusinessException;
 import com.travel.plan.common.code.DailyPlanCode;
+import com.travel.plan.common.code.TravelPlanCode;
 import com.travel.plan.entity.DailyPlan;
 import com.travel.plan.entity.TravelPlan;
 import com.travel.plan.repository.DailyPlanRepository;
+import com.travel.plan.repository.TravelPlanRepository;
 import com.travel.plan.service.DailyPlanService;
 import com.travel.plan.service.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +26,24 @@ public class DailyPlanServiceImpl implements DailyPlanService {
     private DailyPlanRepository dailyPlanRepository;
 
     @Autowired
+    private TravelPlanRepository travelPlanRepository;
+
+    @Autowired
     private GeocodeService geocodeService;
 
     @Override
-    public DailyPlan createDailyPlan(DailyPlan dailyPlan) {
+    public DailyPlan createDailyPlan(Long userId, DailyPlan dailyPlan) {
+        // 获取并验证旅行计划属于当前用户
+        TravelPlan travelPlan = null;
+        if (dailyPlan.getTravelPlan() != null && dailyPlan.getTravelPlan().getId() != null) {
+            travelPlan = travelPlanRepository.findById(dailyPlan.getTravelPlan().getId())
+                    .orElseThrow(() -> new BusinessException(DailyPlanCode.NOT_FOUND, dailyPlan.getTravelPlan().getId()));
+            // 验证旅行计划属于当前用户
+            if (!travelPlan.getUserId().equals(userId)) {
+                throw new BusinessException(TravelPlanCode.NOT_FOUND, dailyPlan.getTravelPlan().getId());
+            }
+            dailyPlan.setTravelPlan(travelPlan);
+        }
         // 日期校验：必须在旅行计划时间范围内
         validatePlanDate(dailyPlan);
         // 自动地理编码
