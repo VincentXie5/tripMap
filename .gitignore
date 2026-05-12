@@ -12,3 +12,8 @@
 .env
 .env.local
 .env.*.local
+/.agents/
+/.claude/
+/.cline/
+/.clinerules/
+/.opencode/

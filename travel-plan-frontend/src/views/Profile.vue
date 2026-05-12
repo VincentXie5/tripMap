@@ -1,8 +1,5 @@
 <template>
   <div class="profile-container">
-    <div class="back-button">
-      <el-button @click="router.push('/')">返回首页</el-button>
-    </div>
     <el-card class="profile-card">
       <template #header>
         <div class="card-header">
@@ -102,12 +99,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { getProfile, updateAvatar, updateNickname, changePassword, sendEmailCode, changeEmail, ProfileResponse } from '@/api/profile'
 
-const router = useRouter()
 const profile = ref<ProfileResponse | null>(null)
 const selectedAvatarType = ref('DEFAULT')
 const nickname = ref('')
@@ -278,12 +273,10 @@ const handlePasswordChange = async () => {
 <style scoped>
 .profile-container {
   padding: 20px;
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto;
-}
-
-.back-button {
-  margin-bottom: 15px;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .profile-card {

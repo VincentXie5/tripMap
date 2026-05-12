@@ -1,16 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElButton } from 'element-plus'
 import PlanList from '../components/PlanList.vue'
 import DailyPlanList from '../components/DailyPlanList.vue'
 import LeafletMapComponent from '../components/LeafletMapComponent.vue'
 import { getPlanList, getDailyPlanList } from '../api/travelApi.ts'
-import { useAuthStore } from '../stores/auth'
 import type { Plan, DailyPlan } from '../types/api'
-
-const router = useRouter()
-const authStore = useAuthStore()
 
 const plans = ref<Plan[]>([])
 const selectedPlan = ref<Plan | null>(null)
@@ -209,11 +203,6 @@ const handleLocatePlan = (planId: number) => {
   }
 }
 
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
-}
-
 onMounted(() => {
   loadPlans()
 })
@@ -221,16 +210,6 @@ onMounted(() => {
 
 <template>
   <div class="home-container">
-    <div class="header">
-      <h1 class="logo">TripMap</h1>
-      <div class="user-info">
-        <el-link type="primary" @click="router.push('/profile')" style="color: white;">
-          {{ authStore.userInfo?.nickname || authStore.userInfo?.email }}
-        </el-link>
-        <el-button type="danger" size="small" @click="handleLogout">退出</el-button>
-      </div>
-    </div>
-    
     <div class="main-content">
       <!-- 左侧面板 -->
       <div class="left-panel" :style="{ width: leftPanelWidth + '%' }">
@@ -288,33 +267,9 @@ onMounted(() => {
 .home-container {
   display: flex;
   flex-direction: column;
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-  height: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  flex-shrink: 0;
-}
-
-.logo {
-  margin: 0;
-  font-size: 20px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .main-content {
