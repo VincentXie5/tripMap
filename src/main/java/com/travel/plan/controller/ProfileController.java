@@ -7,6 +7,9 @@ import com.travel.plan.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -35,6 +38,23 @@ public class ProfileController {
         return ApiResult.success("头像更新成功", userService.toProfileResponse(user));
     }
     
+    /**
+     * 上传自定义头像
+     */
+    @PostMapping("/avatar/upload")
+    public ApiResult<ProfileResponse> uploadAvatar(
+            @AuthenticationPrincipal com.travel.plan.config.UserPrincipal principal,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        User user = userService.uploadAvatar(
+                principal.getUserId(),
+                file.getInputStream(),
+                file.getContentType(),
+                file.getOriginalFilename(),
+                file.getSize()
+        );
+        return ApiResult.success("头像上传成功", userService.toProfileResponse(user));
+    }
+
     /**
      * 更新昵称
      */

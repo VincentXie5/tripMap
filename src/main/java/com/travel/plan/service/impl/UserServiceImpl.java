@@ -9,6 +9,7 @@ import com.travel.plan.entity.User;
 import com.travel.plan.repository.EmailVerifyCodeRepository;
 import com.travel.plan.repository.UserRepository;
 import com.travel.plan.service.EmailService;
+import com.travel.plan.service.FileService;
 import com.travel.plan.service.JwtService;
 import com.travel.plan.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final EmailVerifyCodeRepository emailVerifyCodeRepository;
     private final EmailService emailService;
+    private final FileService fileService;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     
@@ -114,6 +116,43 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
     
+    @Override
+    @Transactional
+    public User uploadAvatar(Long userId, java.io.InputStream inputStream, String contentType, String originalFilename, long size) {
+        // 校验文件类型
+        String ext = getFileExtension(originalFilename);
+        if (ext == null || !ext.matches("^(jpg|jpeg|png|gif|webp)$")) {
+            throw new BusinessException(UserCode.INVALID_AVATAR_FILE_TYPE);
+        }
+        // 校验文件大小 (2MB)
+        if (size > 2 * 1024 * 1024) {
+            throw new BusinessException(UserCode.AVATAR_FILE_TOO_LARGE);
+        }
+
+        User user = getUserById(userId);
+
+        // 如果之前是 CUSTOM 且有不同扩展名，删除旧文件
+        if (user.getAvatarType() == User.AvatarType.CUSTOM && user.getAvatarExt() != null) {
+            if (!user.getAvatarExt().equals(ext)) {
+                fileService.deleteByPrefix("avatars/" + userId + ".");
+            }
+        }
+
+        String key = "avatars/" + userId + "." + ext;
+        fileService.upload(key, inputStream, contentType, size);
+
+        user.setAvatarType(User.AvatarType.CUSTOM);
+        user.setAvatarExt(ext);
+        return userRepository.save(user);
+    }
+
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return null;
+        }
+        return filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+    }
+
     @Override
     @Transactional
     public User updateNickname(Long userId, String newNickname) {
@@ -210,15 +249,15 @@ public class UserServiceImpl implements UserService {
     @Override
     public String generateAvatarUrl(User user) {
         if (user.getAvatarType() == User.AvatarType.GRAVATAR) {
-            // 生成 Gravatar URL
             String emailHash = md5Hex(user.getEmail().toLowerCase().trim());
             return "https://www.gravatar.com/avatar/" + emailHash + "?d=identicon&s=200";
-        } else {
-            // 生成默认头像（使用昵称首字母）
-            String initial = user.getNickname().substring(0, 1).toUpperCase();
-            // 生成简单的 SVG 数据 URI
-            return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect fill='%234F46E5' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='80' font-family='Arial'%3E" + initial + "%3C/text%3E%3C/svg%3E";
         }
+        if (user.getAvatarType() == User.AvatarType.CUSTOM && user.getAvatarExt() != null) {
+            return "/api/files/avatars/" + user.getId() + "." + user.getAvatarExt();
+        }
+        // DEFAULT 或 CUSTOM 但 avatarExt 为空时，生成默认 SVG
+        String initial = user.getNickname().substring(0, 1).toUpperCase();
+        return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect fill='%234F46E5' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='80' font-family='Arial'%3E" + initial + "%3C/text%3E%3C/svg%3E";
     }
     
     public ProfileResponse toProfileResponse(User user) {

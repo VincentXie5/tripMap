@@ -29,7 +29,8 @@ public class SecurityConfig {
                 // 公开接口
                 .requestMatchers("/api/auth/send-code", "/api/auth/register", "/api/auth/login").permitAll()
                 .requestMatchers("/api/geocode/**").permitAll()
-                // 其他接口需要认证
+                .requestMatchers("/api/files/avatars/**", "/api/files/share/**").permitAll()
+                // 其他接口需要认证 (/api/files/private/** 默认受保护)
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

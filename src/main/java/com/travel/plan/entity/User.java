@@ -51,7 +51,10 @@ public class User {
         updatedAt = LocalDateTime.now();
     }
     
+    @Column(name = "avatar_ext", length = 10)
+    private String avatarExt;
+
     public enum AvatarType {
-        GRAVATAR, DEFAULT
+        GRAVATAR, DEFAULT, CUSTOM
     }
 }

@@ -51,3 +51,11 @@ export const sendEmailCode = (email: string) => {
 export const changeEmail = (data: EmailChangeRequest) => {
   return request.put<{ data: ProfileResponse }>('/api/profile/email', data)
 }
+
+export const uploadAvatar = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<{ data: ProfileResponse }>('/api/profile/avatar/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}

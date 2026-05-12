@@ -18,7 +18,21 @@
             <el-radio-group v-model="selectedAvatarType" @change="handleAvatarChange">
               <el-radio value="DEFAULT">默认头像</el-radio>
               <el-radio value="GRAVATAR">Gravatar</el-radio>
+              <el-radio value="CUSTOM">自定义头像</el-radio>
             </el-radio-group>
+            <div v-if="selectedAvatarType === 'CUSTOM'" class="upload-section">
+              <el-upload
+                :auto-upload="false"
+                :show-file-list="false"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                @change="handleFileChange"
+              >
+                <el-button type="primary" :loading="avatarUploading">选择图片</el-button>
+                <template #tip>
+                  <div class="upload-tip">支持 JPG、PNG、GIF、WebP，不超过 2MB</div>
+                </template>
+              </el-upload>
+            </div>
           </div>
         </div>
       </div>
@@ -101,11 +115,13 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { getProfile, updateAvatar, updateNickname, changePassword, sendEmailCode, changeEmail, ProfileResponse } from '@/api/profile'
+import { getProfile, updateAvatar, updateNickname, changePassword, sendEmailCode, changeEmail, uploadAvatar } from '@/api/profile'
+import type { ProfileResponse } from '@/api/profile'
 
 const profile = ref<ProfileResponse | null>(null)
 const selectedAvatarType = ref('DEFAULT')
 const nickname = ref('')
+const avatarUploading = ref(false)
 const nicknameLoading = ref(false)
 
 // Email change state
@@ -169,6 +185,10 @@ const loadProfile = async () => {
 }
 
 const handleAvatarChange = async () => {
+  // CUSTOM 类型由上传组件处理，radio 切换仅处理 DEFAULT / GRAVATAR
+  if (selectedAvatarType.value === 'CUSTOM') {
+    return
+  }
   try {
     const res = await updateAvatar({ avatarType: selectedAvatarType.value })
     profile.value = res.data
@@ -176,6 +196,34 @@ const handleAvatarChange = async () => {
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || '更新失败')
     selectedAvatarType.value = profile.value?.avatarType || 'DEFAULT'
+  }
+}
+
+const handleFileChange = async (file: any) => {
+  const rawFile = file.raw
+  if (!rawFile) return
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(rawFile.type)) {
+    ElMessage.error('仅支持 JPG、PNG、GIF、WebP 格式')
+    return
+  }
+  if (rawFile.size > 2 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 2MB')
+    return
+  }
+
+  avatarUploading.value = true
+  try {
+    const res: any = await uploadAvatar(rawFile)
+    profile.value = res.data
+    selectedAvatarType.value = 'CUSTOM'
+    ElMessage.success('头像上传成功')
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '上传失败')
+    selectedAvatarType.value = profile.value?.avatarType || 'DEFAULT'
+  } finally {
+    avatarUploading.value = false
   }
 }
 
@@ -314,6 +362,16 @@ const handlePasswordChange = async () => {
 .email-section {
   display: flex;
   flex-direction: column;
+}
+
+.upload-section {
+  margin-top: 12px;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: #999;
+  margin-top: 6px;
 }
 
 .email-change-form {

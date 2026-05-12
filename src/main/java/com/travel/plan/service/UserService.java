@@ -56,6 +56,17 @@ public interface UserService {
      * @return 更新后的用户
      */
     User updateAvatar(Long userId, String avatarType);
+
+    /**
+     * 上传自定义头像
+     * @param userId 用户ID
+     * @param inputStream 文件流
+     * @param contentType 文件 MIME 类型
+     * @param originalFilename 原始文件名
+     * @param size 文件大小
+     * @return 更新后的用户
+     */
+    User uploadAvatar(Long userId, java.io.InputStream inputStream, String contentType, String originalFilename, long size);
     
     /**
      * 更新昵称
