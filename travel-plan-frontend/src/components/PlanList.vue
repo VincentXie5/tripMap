@@ -25,6 +25,16 @@
           </span>
           <span class="plan-title">{{ plan.title }}</span>
         </div>
+        <div class="plan-toggle">
+          <el-switch
+            v-model="plan.isPublic"
+            size="small"
+            active-text="公开"
+            inactive-text="私有"
+            @click.stop
+            @change="handleToggleVisibility(plan)"
+          />
+        </div>
         <div class="plan-actions">
           <el-button type="success" size="small" @click.stop="exportMarkdown(plan)">导出MD</el-button>
           <el-button type="primary" size="small" @click.stop="editPlan(plan)">编辑</el-button>
@@ -105,7 +115,7 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, defineExpose, reactive } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { createPlan, updatePlan, deletePlan as deletePlanApi } from '../api/travelApi'
+import { createPlan, updatePlan, deletePlan as deletePlanApi, togglePlanVisibility } from '../api/travelApi'
 import type { Plan } from '../types/api'
 defineProps({
   plans: {
@@ -254,6 +264,16 @@ const deletePlan = async (plan: Plan) => {
   }
 }
 
+const handleToggleVisibility = async (plan: Plan) => {
+  try {
+    await togglePlanVisibility(plan.id)
+    ElMessage.success(plan.isPublic ? '已设为公开' : '已设为私有')
+  } catch (error) {
+    // revert on failure
+    plan.isPublic = !plan.isPublic
+  }
+}
+
 // 暴露给父组件的方法和属性
 defineExpose({
   exportDialogVisible,
@@ -315,6 +335,11 @@ defineExpose({
   font-size: 14px;
   color: #303133;
   font-weight: 500;
+}
+
+.plan-toggle {
+  flex-shrink: 0;
+  margin: 0 10px;
 }
 
 .plan-actions {

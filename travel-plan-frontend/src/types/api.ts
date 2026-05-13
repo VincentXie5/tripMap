@@ -21,6 +21,64 @@ export interface Plan {
   title: string
   startDate: string
   endDate: string
+  isPublic?: boolean
+}
+
+/**
+ * 公开计划卡片（与后端 PublicPlanCardDTO 对应）
+ */
+export interface PublicPlanCard {
+  id: number
+  title: string
+  startDate: string
+  endDate: string
+  creatorNickname: string
+  creatorAvatarUrl: string
+  creatorUserId: number
+  routePreview: string | null
+  dominantTag: number
+  dayCount: number
+  locationCount: number
+}
+
+/**
+ * 公开计划详情（与后端 PublicPlanDetailDTO 对应）
+ */
+export interface PublicPlanDetail {
+  id: number
+  title: string
+  startDate: string
+  endDate: string
+  creatorNickname: string
+  creatorAvatarUrl: string
+  creatorUserId: number
+  dailyPlans: PlanDailyPlan[]
+}
+
+export interface PlanDailyPlan {
+  id: number
+  planDate: string
+  time: string
+  location: string
+  remark: string | null
+  tag: number
+  sortOrder: number
+  latitude: number | null
+  longitude: number | null
+}
+
+/**
+ * 分页结果
+ */
+export interface PageResult<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  number: number
+  size: number
+  first: boolean
+  last: boolean
+  empty: boolean
 }
 
 /**

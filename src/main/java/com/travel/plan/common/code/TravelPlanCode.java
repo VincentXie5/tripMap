@@ -11,7 +11,9 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum TravelPlanCode implements ErrorCode {
     NOT_FOUND("TRAVEL-PLAN-001", "未找到旅行计划, id:{}", HttpStatus.NOT_FOUND),
-    END_DATE_LARGER_THAN_START_DATE("TRAVEL-PLAN-002", "结束日期必须大于等于开始日期", HttpStatus.BAD_REQUEST);
+    END_DATE_LARGER_THAN_START_DATE("TRAVEL-PLAN-002", "结束日期必须大于等于开始日期", HttpStatus.BAD_REQUEST),
+    NOT_OWNER("TRAVEL-PLAN-003", "无权操作此计划", HttpStatus.FORBIDDEN),
+    NOT_PUBLIC("TRAVEL-PLAN-004", "此计划未公开", HttpStatus.NOT_FOUND);
 
 
     private final String code;

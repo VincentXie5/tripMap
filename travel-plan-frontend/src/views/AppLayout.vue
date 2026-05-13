@@ -2,6 +2,18 @@
   <div class="app-layout">
     <header class="app-header">
       <h1 class="logo" @click="router.push('/')">TripMap</h1>
+      <nav class="header-nav">
+        <span
+          class="nav-tab"
+          :class="{ active: route.path === '/' }"
+          @click="router.push('/')"
+        >我的计划</span>
+        <span
+          class="nav-tab"
+          :class="{ active: route.path.startsWith('/xunji') || route.path.startsWith('/plan/') }"
+          @click="router.push('/xunji')"
+        >寻迹</span>
+      </nav>
       <div class="header-right">
         <el-avatar :size="36" :src="avatarUrl">
           {{ authStore.userInfo?.nickname?.charAt(0) }}
@@ -20,12 +32,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElAvatar, ElButton } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { getProfile } from '@/api/profile'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const avatarUrl = ref<string>()
@@ -70,6 +83,32 @@ const handleLogout = () => {
   font-size: 20px;
   cursor: pointer;
   user-select: none;
+}
+
+.header-nav {
+  display: flex;
+  gap: 4px;
+  margin-left: 32px;
+}
+
+.nav-tab {
+  padding: 4px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.75);
+  transition: all 0.2s;
+}
+
+.nav-tab:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.nav-tab.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.25);
+  font-weight: 600;
 }
 
 .header-right {

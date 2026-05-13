@@ -84,6 +84,19 @@ export const deleteDailyPlan = (id: number) => request.delete(`/api/dailyPlan/${
 export const updateDailyPlanSort = (planId: number, sortOrderList: { id: number; sortOrder: number }[]) => 
   request.put(`/api/dailyPlan/sort/${planId}`, sortOrderList)
 
+// 公开计划相关接口
+export const getPublicPlans = (params: { page?: number; size?: number; keyword?: string; tag?: number }) =>
+  request.get('/api/travelPlan/public', { params })
+
+export const getPublicPlanDetail = (id: number) =>
+  request.get(`/api/travelPlan/public/${id}`)
+
+export const getPublicPlansByUser = (userId: number, params?: { page?: number; size?: number }) =>
+  request.get(`/api/travelPlan/public/user/${userId}`, { params })
+
+export const togglePlanVisibility = (planId: number) =>
+  request.put(`/api/travelPlan/${planId}/visibility`)
+
 // 地理编码相关接口
-export const searchLocations = (keyword: string) => 
+export const searchLocations = (keyword: string) =>
   request.get(`/api/geocode/search?keyword=${encodeURIComponent(keyword)}`)

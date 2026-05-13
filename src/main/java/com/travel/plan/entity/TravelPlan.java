@@ -23,4 +23,7 @@ public class TravelPlan {
     
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    @Column(name = "is_public")
+    private Boolean isPublic = false;
 }

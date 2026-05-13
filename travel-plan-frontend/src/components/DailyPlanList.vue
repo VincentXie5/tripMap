@@ -3,7 +3,7 @@
     <template #header>
       <div class="header-wrapper">
         <span>每日行程 - {{ planTitle }}</span>
-        <el-button type="primary" size="small" @click="openAddDialog">
+        <el-button v-if="!readonly" type="primary" size="small" @click="openAddDialog">
           + 添加行程
         </el-button>
       </div>
@@ -37,7 +37,7 @@
                 @click="handleItemClick(element)"
               >
                 <div class="timeline-dot" :class="[`tag-dot-${element.tag}`]"></div>
-                <div class="drag-handle">⋮⋮</div>
+                <div v-if="!readonly" class="drag-handle">⋮⋮</div>
                 <div class="daily-content">
                   <div class="daily-info">
                     <span class="daily-time">{{ formatTime(element.time) }}</span>
@@ -46,7 +46,7 @@
                   </div>
                   <div v-if="element.remark" class="daily-remark">{{ element.remark }}</div>
                 </div>
-                <div class="daily-actions">
+                <div v-if="!readonly" class="daily-actions">
                   <el-button type="primary" size="small" @click.stop="editDailyPlan(element)">编辑</el-button>
                   <el-button type="danger" size="small" @click.stop="deleteDailyPlan(element)">删除</el-button>
                 </div>
@@ -221,6 +221,7 @@ const props = defineProps<{
   planEndDate?: string
   highlightedId?: number | null
   highlightedDate?: string | null
+  readonly?: boolean
 }>()
 
 const emit = defineEmits(['daily-plan-updated', 'daily-plan-deleted', 'daily-plan-click', 'daily-added'])
