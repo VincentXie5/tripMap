@@ -5,9 +5,13 @@ import com.travel.plan.common.code.TravelPlanCode;
 import com.travel.plan.controller.dto.PublicPlanCardDTO;
 import com.travel.plan.controller.dto.PublicPlanDetailDTO;
 import com.travel.plan.entity.DailyPlan;
+import com.travel.plan.entity.PlanFavorite;
+import com.travel.plan.entity.PlanLike;
 import com.travel.plan.entity.TravelPlan;
 import com.travel.plan.entity.User;
 import com.travel.plan.repository.DailyPlanRepository;
+import com.travel.plan.repository.PlanFavoriteRepository;
+import com.travel.plan.repository.PlanLikeRepository;
 import com.travel.plan.repository.TravelPlanRepository;
 import com.travel.plan.repository.UserRepository;
 import com.travel.plan.service.TravelPlanService;
@@ -21,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,6 +44,12 @@ public class TravelPlanServiceImpl implements TravelPlanService {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private PlanLikeRepository planLikeRepository;
+
+    @Autowired
+    private PlanFavoriteRepository planFavoriteRepository;
 
     @Override
     public TravelPlan createTravelPlan(Long userId, TravelPlan travelPlan) {
@@ -77,7 +88,7 @@ public class TravelPlanServiceImpl implements TravelPlanService {
     }
 
     @Override
-    public Page<PublicPlanCardDTO> getPublicPlans(String keyword, Integer tag, int page, int size) {
+    public Page<PublicPlanCardDTO> getPublicPlans(String keyword, Integer tag, int page, int size, Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         Page<TravelPlan> plans;
         if (keyword != null && !keyword.trim().isEmpty()) {
@@ -85,24 +96,49 @@ public class TravelPlanServiceImpl implements TravelPlanService {
         } else {
             plans = travelPlanRepository.findByIsPublicTrue(pageable);
         }
-        return plans.map(plan -> toCardDTO(plan, tag));
+        Set<Long> likedPlanIds = Collections.emptySet();
+        Set<Long> favoritedPlanIds = Collections.emptySet();
+        if (currentUserId != null) {
+            List<Long> planIds = plans.getContent().stream().map(TravelPlan::getId).collect(Collectors.toList());
+            likedPlanIds = planLikeRepository.findByUserIdAndPlanIdIn(currentUserId, planIds)
+                    .stream().map(PlanLike::getPlanId).collect(Collectors.toSet());
+            favoritedPlanIds = planFavoriteRepository.findByUserIdAndPlanIdIn(currentUserId, planIds)
+                    .stream().map(PlanFavorite::getPlanId).collect(Collectors.toSet());
+        }
+        Set<Long> finalLikedIds = likedPlanIds;
+        Set<Long> finalFavoritedIds = favoritedPlanIds;
+        return plans.map(plan -> toCardDTO(plan, tag, finalLikedIds, finalFavoritedIds));
     }
 
     @Override
-    public PublicPlanDetailDTO getPublicPlanDetail(Long planId) {
+    public PublicPlanDetailDTO getPublicPlanDetail(Long planId, Long currentUserId) {
         TravelPlan plan = travelPlanRepository.findById(planId)
                 .orElseThrow(() -> new BusinessException(TravelPlanCode.NOT_FOUND, planId));
         if (!Boolean.TRUE.equals(plan.getIsPublic())) {
             throw new BusinessException(TravelPlanCode.NOT_PUBLIC);
         }
-        return toDetailDTO(plan);
+        boolean isLiked = currentUserId != null && planLikeRepository.existsByUserIdAndPlanId(currentUserId, planId);
+        boolean isFavorited = currentUserId != null && planFavoriteRepository.existsByUserIdAndPlanId(currentUserId, planId);
+        return toDetailDTO(plan, isLiked, isFavorited);
     }
 
     @Override
-    public Page<PublicPlanCardDTO> getPublicPlansByUser(Long userId, int page, int size) {
+    public Page<PublicPlanCardDTO> getPublicPlansByUser(Long userId, int page, int size, Long currentUserId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        Set<Long> likedPlanIds = Collections.emptySet();
+        Set<Long> favoritedPlanIds = Collections.emptySet();
+        if (currentUserId != null) {
+            List<Long> planIds = travelPlanRepository.findByUserIdAndIsPublicTrue(userId, pageable)
+                    .getContent().stream().map(TravelPlan::getId).collect(Collectors.toList());
+            likedPlanIds = planLikeRepository.findByUserIdAndPlanIdIn(currentUserId, planIds)
+                    .stream().map(PlanLike::getPlanId).collect(Collectors.toSet());
+            favoritedPlanIds = planFavoriteRepository.findByUserIdAndPlanIdIn(currentUserId, planIds)
+                    .stream().map(PlanFavorite::getPlanId).collect(Collectors.toSet());
+        }
+        Set<Long> finalLikedIds = likedPlanIds;
+        Set<Long> finalFavoritedIds = favoritedPlanIds;
         return travelPlanRepository.findByUserIdAndIsPublicTrue(userId, pageable)
-                .map(plan -> toCardDTO(plan, null));
+                .map(plan -> toCardDTO(plan, null, finalLikedIds, finalFavoritedIds));
     }
 
     @Override
@@ -117,7 +153,59 @@ public class TravelPlanServiceImpl implements TravelPlanService {
         travelPlanRepository.save(plan);
     }
 
-    private PublicPlanCardDTO toCardDTO(TravelPlan plan, Integer tagFilter) {
+    @Override
+    @Transactional
+    public Map<String, Object> toggleLike(Long planId, Long userId) {
+        TravelPlan plan = travelPlanRepository.findById(planId)
+                .orElseThrow(() -> new BusinessException(TravelPlanCode.NOT_FOUND, planId));
+        Optional<PlanLike> existing = planLikeRepository.findByUserIdAndPlanId(userId, planId);
+        Map<String, Object> result = new HashMap<>();
+        if (existing.isPresent()) {
+            planLikeRepository.delete(existing.get());
+            plan.setLikeCount(Math.max(0, plan.getLikeCount() - 1));
+            travelPlanRepository.save(plan);
+            result.put("liked", false);
+        } else {
+            PlanLike like = new PlanLike();
+            like.setUserId(userId);
+            like.setPlanId(planId);
+            like.setCreatedAt(LocalDateTime.now());
+            planLikeRepository.save(like);
+            plan.setLikeCount(plan.getLikeCount() + 1);
+            travelPlanRepository.save(plan);
+            result.put("liked", true);
+        }
+        result.put("likeCount", plan.getLikeCount());
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> toggleFavorite(Long planId, Long userId) {
+        TravelPlan plan = travelPlanRepository.findById(planId)
+                .orElseThrow(() -> new BusinessException(TravelPlanCode.NOT_FOUND, planId));
+        Optional<PlanFavorite> existing = planFavoriteRepository.findByUserIdAndPlanId(userId, planId);
+        Map<String, Object> result = new HashMap<>();
+        if (existing.isPresent()) {
+            planFavoriteRepository.delete(existing.get());
+            plan.setFavoriteCount(Math.max(0, plan.getFavoriteCount() - 1));
+            travelPlanRepository.save(plan);
+            result.put("favorited", false);
+        } else {
+            PlanFavorite favorite = new PlanFavorite();
+            favorite.setUserId(userId);
+            favorite.setPlanId(planId);
+            favorite.setCreatedAt(LocalDateTime.now());
+            planFavoriteRepository.save(favorite);
+            plan.setFavoriteCount(plan.getFavoriteCount() + 1);
+            travelPlanRepository.save(plan);
+            result.put("favorited", true);
+        }
+        result.put("favoriteCount", plan.getFavoriteCount());
+        return result;
+    }
+
+    private PublicPlanCardDTO toCardDTO(TravelPlan plan, Integer tagFilter, Set<Long> likedPlanIds, Set<Long> favoritedPlanIds) {
         PublicPlanCardDTO dto = new PublicPlanCardDTO();
         dto.setId(plan.getId());
         dto.setTitle(plan.getTitle());
@@ -136,11 +224,15 @@ public class TravelPlanServiceImpl implements TravelPlanService {
         dto.setDominantTag(calculateDominantTag(dailyPlans, tagFilter));
         dto.setDayCount(calculateDayCount(plan));
         dto.setLocationCount(dailyPlans.size());
+        dto.setLikeCount(plan.getLikeCount());
+        dto.setFavoriteCount(plan.getFavoriteCount());
+        dto.setIsLiked(likedPlanIds.contains(plan.getId()));
+        dto.setIsFavorited(favoritedPlanIds.contains(plan.getId()));
 
         return dto;
     }
 
-    private PublicPlanDetailDTO toDetailDTO(TravelPlan plan) {
+    private PublicPlanDetailDTO toDetailDTO(TravelPlan plan, boolean isLiked, boolean isFavorited) {
         PublicPlanDetailDTO dto = new PublicPlanDetailDTO();
         dto.setId(plan.getId());
         dto.setTitle(plan.getTitle());
@@ -168,6 +260,10 @@ public class TravelPlanServiceImpl implements TravelPlanService {
             dpDto.setLongitude(dp.getLongitude());
             return dpDto;
         }).collect(Collectors.toList()));
+        dto.setLikeCount(plan.getLikeCount());
+        dto.setFavoriteCount(plan.getFavoriteCount());
+        dto.setIsLiked(isLiked);
+        dto.setIsFavorited(isFavorited);
 
         return dto;
     }
@@ -188,7 +284,6 @@ public class TravelPlanServiceImpl implements TravelPlanService {
     }
 
     private String extractShortName(String location) {
-        // 取逗号、空格、 "-" 、 "·"  之前的部分作为短名称
         for (char sep : new char[]{'，', ',', ' ', '-', '·', '（', '('}) {
             int idx = location.indexOf(sep);
             if (idx > 0) {
@@ -206,7 +301,6 @@ public class TravelPlanServiceImpl implements TravelPlanService {
                 .map(dp -> dp.getTag() != null ? dp.getTag() : 0)
                 .collect(Collectors.groupingBy(t -> t, Collectors.counting()));
         if (tagFilter != null) {
-            // 当有标签筛选时，返回该标签的计数用于排序
             return tagCounts.getOrDefault(tagFilter, 0L).intValue();
         }
         return tagCounts.entrySet().stream()

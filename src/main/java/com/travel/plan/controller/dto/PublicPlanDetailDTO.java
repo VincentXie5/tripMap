@@ -14,6 +14,10 @@ public class PublicPlanDetailDTO {
     private String creatorAvatarUrl;
     private Long creatorUserId;
     private List<DailyPlanDTO> dailyPlans;
+    private Integer likeCount;
+    private Integer favoriteCount;
+    private Boolean isLiked;
+    private Boolean isFavorited;
 
     @Data
     public static class DailyPlanDTO {

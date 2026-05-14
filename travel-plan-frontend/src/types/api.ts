@@ -39,6 +39,10 @@ export interface PublicPlanCard {
   dominantTag: number
   dayCount: number
   locationCount: number
+  likeCount: number
+  favoriteCount: number
+  isLiked: boolean
+  isFavorited: boolean
 }
 
 /**
@@ -53,6 +57,10 @@ export interface PublicPlanDetail {
   creatorAvatarUrl: string
   creatorUserId: number
   dailyPlans: PlanDailyPlan[]
+  likeCount: number
+  favoriteCount: number
+  isLiked: boolean
+  isFavorited: boolean
 }
 
 export interface PlanDailyPlan {

@@ -16,4 +16,8 @@ public class PublicPlanCardDTO {
     private Integer dominantTag;
     private Integer dayCount;
     private Integer locationCount;
+    private Integer likeCount;
+    private Integer favoriteCount;
+    private Boolean isLiked;
+    private Boolean isFavorited;
 }

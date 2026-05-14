@@ -26,4 +26,10 @@ public class TravelPlan {
 
     @Column(name = "is_public")
     private Boolean isPublic = false;
+
+    @Column(name = "like_count", nullable = false)
+    private Integer likeCount = 0;
+
+    @Column(name = "favorite_count", nullable = false)
+    private Integer favoriteCount = 0;
 }

@@ -31,6 +31,16 @@
       </div>
       <span class="card-date">{{ plan.startDate }} ~ {{ plan.endDate }}</span>
     </div>
+    <div class="card-actions">
+      <span class="action-btn" :class="{ active: plan.isLiked }" @click.stop="$emit('like')">
+        <span class="action-icon">{{ plan.isLiked ? '❤️' : '🤍' }}</span>
+        <span class="action-count">{{ plan.likeCount }}</span>
+      </span>
+      <span class="action-btn" :class="{ active: plan.isFavorited }" @click.stop="$emit('favorite')">
+        <span class="action-icon">{{ plan.isFavorited ? '⭐' : '☆' }}</span>
+        <span class="action-count">{{ plan.favoriteCount }}</span>
+      </span>
+    </div>
   </div>
 </template>
 
@@ -45,6 +55,8 @@ const props = defineProps<{
 defineEmits<{
   click: []
   'creator-click': []
+  like: []
+  favorite: []
 }>()
 
 const TAG_CONFIG: Record<number, { label: string; type: string }> = {
@@ -162,5 +174,40 @@ const displayTags = computed(() => {
 .card-date {
   font-size: 12px;
   color: #c0c4cc;
+}
+
+.card-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #909399;
+  transition: color 0.2s;
+  user-select: none;
+}
+
+.action-btn:hover {
+  color: #409eff;
+}
+
+.action-btn.active {
+  color: #409eff;
+}
+
+.action-icon {
+  font-size: 15px;
+}
+
+.action-count {
+  font-size: 13px;
 }
 </style>

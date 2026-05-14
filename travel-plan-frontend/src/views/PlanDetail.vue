@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DailyPlanList from '../components/DailyPlanList.vue'
 import LeafletMapComponent from '../components/LeafletMapComponent.vue'
-import { getPublicPlanDetail } from '../api/travelApi'
+import { getPublicPlanDetail, toggleLike, toggleFavorite } from '../api/travelApi'
 import type { PublicPlanDetail, PlanDailyPlan, DailyPlan } from '../types/api'
 import { ElMessage } from 'element-plus'
 
@@ -106,6 +106,24 @@ const handleMapClick = () => {
   highlightedDate.value = null
 }
 
+const handleLike = async () => {
+  if (!planDetail.value) return
+  try {
+    const res: any = await toggleLike(planDetail.value.id)
+    planDetail.value.isLiked = res.liked
+    planDetail.value.likeCount = res.likeCount
+  } catch (_) { /* error handled by interceptor */ }
+}
+
+const handleFavorite = async () => {
+  if (!planDetail.value) return
+  try {
+    const res: any = await toggleFavorite(planDetail.value.id)
+    planDetail.value.isFavorited = res.favorited
+    planDetail.value.favoriteCount = res.favoriteCount
+  } catch (_) { /* error handled by interceptor */ }
+}
+
 onMounted(() => {
   loadPlan()
 })
@@ -131,6 +149,16 @@ onMounted(() => {
           </div>
           <h3 class="detail-title">{{ planDetail.title }}</h3>
           <p class="detail-date">{{ planDetail.startDate }} ~ {{ planDetail.endDate }}</p>
+          <div class="detail-actions">
+            <span class="action-btn" :class="{ active: planDetail.isLiked }" @click="handleLike">
+              <span class="action-icon">{{ planDetail.isLiked ? '❤️' : '🤍' }}</span>
+              <span>{{ planDetail.likeCount }}</span>
+            </span>
+            <span class="action-btn" :class="{ active: planDetail.isFavorited }" @click="handleFavorite">
+              <span class="action-icon">{{ planDetail.isFavorited ? '⭐' : '☆' }}</span>
+              <span>{{ planDetail.favoriteCount }}</span>
+            </span>
+          </div>
         </div>
         <DailyPlanList
           v-if="dailyPlans.length > 0"
@@ -232,6 +260,35 @@ onMounted(() => {
   margin: 0;
   font-size: 13px;
   color: #909399;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.detail-actions .action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #909399;
+  transition: color 0.2s;
+  user-select: none;
+}
+
+.detail-actions .action-btn:hover {
+  color: #409eff;
+}
+
+.detail-actions .action-btn.active {
+  color: #409eff;
+}
+
+.detail-actions .action-icon {
+  font-size: 18px;
 }
 
 .empty-daily {

@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/travelPlan")
@@ -48,26 +49,33 @@ public class TravelPlanController {
 
     @GetMapping("/public")
     public ApiResult<Page<PublicPlanCardDTO>> getPublicPlans(
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer tag) {
-        Page<PublicPlanCardDTO> plans = travelPlanService.getPublicPlans(keyword, tag, page, size);
+        Long currentUserId = principal != null ? principal.getUserId() : null;
+        Page<PublicPlanCardDTO> plans = travelPlanService.getPublicPlans(keyword, tag, page, size, currentUserId);
         return ApiResult.success(plans);
     }
 
     @GetMapping("/public/{id}")
-    public ApiResult<PublicPlanDetailDTO> getPublicPlanDetail(@PathVariable Long id) {
-        PublicPlanDetailDTO detail = travelPlanService.getPublicPlanDetail(id);
+    public ApiResult<PublicPlanDetailDTO> getPublicPlanDetail(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id) {
+        Long currentUserId = principal != null ? principal.getUserId() : null;
+        PublicPlanDetailDTO detail = travelPlanService.getPublicPlanDetail(id, currentUserId);
         return ApiResult.success(detail);
     }
 
     @GetMapping("/public/user/{userId}")
     public ApiResult<Page<PublicPlanCardDTO>> getPublicPlansByUser(
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size) {
-        Page<PublicPlanCardDTO> plans = travelPlanService.getPublicPlansByUser(userId, page, size);
+        Long currentUserId = principal != null ? principal.getUserId() : null;
+        Page<PublicPlanCardDTO> plans = travelPlanService.getPublicPlansByUser(userId, page, size, currentUserId);
         return ApiResult.success(plans);
     }
 
@@ -77,5 +85,21 @@ public class TravelPlanController {
             @PathVariable Long id) {
         travelPlanService.toggleVisibility(id, principal.getUserId());
         return ApiResult.success(null);
+    }
+
+    @PostMapping("/{id}/like")
+    public ApiResult<Map<String, Object>> toggleLike(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id) {
+        Map<String, Object> result = travelPlanService.toggleLike(id, principal.getUserId());
+        return ApiResult.success(result);
+    }
+
+    @PostMapping("/{id}/favorite")
+    public ApiResult<Map<String, Object>> toggleFavorite(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id) {
+        Map<String, Object> result = travelPlanService.toggleFavorite(id, principal.getUserId());
+        return ApiResult.success(result);
     }
 }

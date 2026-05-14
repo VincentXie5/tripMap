@@ -46,6 +46,8 @@
         :plan="card"
         @click="goToDetail(card.id)"
         @creator-click="filterByCreator(card)"
+        @like="handleLike(card)"
+        @favorite="handleFavorite(card)"
       />
     </div>
 
@@ -63,7 +65,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, Loading } from '@element-plus/icons-vue'
-import { getPublicPlans, getPublicPlansByUser } from '../api/travelApi'
+import { getPublicPlans, getPublicPlansByUser, toggleLike, toggleFavorite } from '../api/travelApi'
 import type { PublicPlanCard as PublicPlanCardType } from '../types/api'
 import PublicPlanCard from '../components/PublicPlanCard.vue'
 
@@ -167,6 +169,22 @@ const filterByCreator = (card: PublicPlanCardType) => {
 const clearCreatorFilter = () => {
   creatorFilter.value = null
   fetchPlans(false)
+}
+
+const handleLike = async (card: PublicPlanCardType) => {
+  try {
+    const res: any = await toggleLike(card.id)
+    card.isLiked = res.liked
+    card.likeCount = res.likeCount
+  } catch (_) { /* error handled by interceptor */ }
+}
+
+const handleFavorite = async (card: PublicPlanCardType) => {
+  try {
+    const res: any = await toggleFavorite(card.id)
+    card.isFavorited = res.favorited
+    card.favoriteCount = res.favoriteCount
+  } catch (_) { /* error handled by interceptor */ }
 }
 
 onMounted(() => {
