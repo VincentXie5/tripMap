@@ -103,6 +103,9 @@ export const toggleLike = (planId: number): Promise<{ liked: boolean; likeCount:
 export const toggleFavorite = (planId: number): Promise<{ favorited: boolean; favoriteCount: number }> =>
   request.post(`/api/travelPlan/${planId}/favorite`)
 
+export const getFavoritePlans = (params: { page?: number; size?: number; keyword?: string }) =>
+  request.get('/api/travelPlan/favorites', { params })
+
 // 地理编码相关接口
 export const searchLocations = (keyword: string) =>
   request.get(`/api/geocode/search?keyword=${encodeURIComponent(keyword)}`)

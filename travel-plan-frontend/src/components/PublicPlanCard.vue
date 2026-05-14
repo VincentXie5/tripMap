@@ -29,7 +29,10 @@
         </el-avatar>
         <span class="creator-name">{{ plan.creatorNickname }}</span>
       </div>
-      <span class="card-date">{{ plan.startDate }} ~ {{ plan.endDate }}</span>
+      <span class="card-date">
+        {{ plan.startDate }} ~ {{ plan.endDate }}
+        <span v-if="plan.favoritedAt" class="favorited-at"> · 收藏于 {{ timeAgo(plan.favoritedAt) }}</span>
+      </span>
     </div>
     <div class="card-actions">
       <span class="action-btn" :class="{ active: plan.isLiked }" @click.stop="$emit('like')">
@@ -74,6 +77,17 @@ const TAG_COLORS: Record<number, string> = {
   4: '#909399',
   5: '#F56C6C',
   0: '#409EFF',
+}
+
+const timeAgo = (dateStr: string) => {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const days = Math.floor(diff / 86400000)
+  if (days < 1) return '今天'
+  if (days === 1) return '1 天前'
+  if (days < 30) return `${days} 天前`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `${months} 个月前`
+  return `${Math.floor(months / 12)} 年前`
 }
 
 const themeColor = computed(() => TAG_COLORS[props.plan.dominantTag] || TAG_COLORS[0])

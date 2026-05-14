@@ -43,6 +43,7 @@ export interface PublicPlanCard {
   favoriteCount: number
   isLiked: boolean
   isFavorited: boolean
+  favoritedAt?: string
 }
 
 /**
@@ -61,6 +62,7 @@ export interface PublicPlanDetail {
   favoriteCount: number
   isLiked: boolean
   isFavorited: boolean
+  favoritedAt?: string
 }
 
 export interface PlanDailyPlan {

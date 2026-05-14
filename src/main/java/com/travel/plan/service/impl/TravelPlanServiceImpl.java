@@ -205,6 +205,55 @@ public class TravelPlanServiceImpl implements TravelPlanService {
         return result;
     }
 
+    @Override
+    public Page<PublicPlanCardDTO> getFavoritePlans(Long userId, String keyword, int page, int size) {
+        List<PlanFavorite> favorites = planFavoriteRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        if (favorites.isEmpty()) {
+            return Page.empty(PageRequest.of(page, size));
+        }
+        Map<Long, LocalDateTime> favoritedAtMap = favorites.stream()
+                .collect(Collectors.toMap(PlanFavorite::getPlanId, PlanFavorite::getCreatedAt, (a, b) -> a, LinkedHashMap::new));
+        List<Long> orderedPlanIds = new ArrayList<>(favoritedAtMap.keySet());
+
+        List<TravelPlan> allPlans = travelPlanRepository.findByIdInAndIsPublicTrue(orderedPlanIds);
+        Map<Long, TravelPlan> planMap = allPlans.stream().collect(Collectors.toMap(TravelPlan::getId, p -> p));
+
+        List<Long> matchedIds = orderedPlanIds;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            String kw = keyword.trim().toLowerCase();
+            matchedIds = orderedPlanIds.stream().filter(id -> {
+                TravelPlan tp = planMap.get(id);
+                if (tp == null) return false;
+                if (tp.getTitle() != null && tp.getTitle().toLowerCase().contains(kw)) return true;
+                List<DailyPlan> dps = dailyPlanRepository.findAllByPlanIdOrderBySortOrder(id);
+                return dps.stream().anyMatch(dp -> dp.getLocation() != null && dp.getLocation().toLowerCase().contains(kw));
+            }).collect(Collectors.toList());
+        }
+
+        int total = matchedIds.size();
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, total);
+        if (fromIndex >= total) {
+            return Page.empty(PageRequest.of(page, size));
+        }
+        List<Long> pageIds = matchedIds.subList(fromIndex, toIndex);
+
+        List<TravelPlan> pagePlans = pageIds.stream().map(planMap::get).filter(Objects::nonNull).collect(Collectors.toList());
+
+        Set<Long> likedPlanIds = planLikeRepository.findByUserIdAndPlanIdIn(userId, orderedPlanIds)
+                .stream().map(PlanLike::getPlanId).collect(Collectors.toSet());
+
+        List<PublicPlanCardDTO> dtos = pagePlans.stream().map(plan -> {
+            PublicPlanCardDTO dto = toCardDTO(plan, null, likedPlanIds, Collections.singleton(plan.getId()));
+            dto.setIsFavorited(true);
+            LocalDateTime fa = favoritedAtMap.get(plan.getId());
+            dto.setFavoritedAt(fa != null ? fa.toString() : null);
+            return dto;
+        }).collect(Collectors.toList());
+
+        return new org.springframework.data.domain.PageImpl<>(dtos, PageRequest.of(page, size), total);
+    }
+
     private PublicPlanCardDTO toCardDTO(TravelPlan plan, Integer tagFilter, Set<Long> likedPlanIds, Set<Long> favoritedPlanIds) {
         PublicPlanCardDTO dto = new PublicPlanCardDTO();
         dto.setId(plan.getId());

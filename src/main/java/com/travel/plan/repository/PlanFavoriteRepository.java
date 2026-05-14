@@ -9,4 +9,5 @@ public interface PlanFavoriteRepository extends JpaRepository<PlanFavorite, Long
     List<PlanFavorite> findByUserIdAndPlanIdIn(Long userId, List<Long> planIds);
     Optional<PlanFavorite> findByUserIdAndPlanId(Long userId, Long planId);
     boolean existsByUserIdAndPlanId(Long userId, Long planId);
+    List<PlanFavorite> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

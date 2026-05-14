@@ -18,4 +18,5 @@ public interface TravelPlanService {
     void toggleVisibility(Long planId, Long userId);
     Map<String, Object> toggleLike(Long planId, Long userId);
     Map<String, Object> toggleFavorite(Long planId, Long userId);
+    Page<PublicPlanCardDTO> getFavoritePlans(Long userId, String keyword, int page, int size);
 }

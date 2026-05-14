@@ -21,6 +21,16 @@ public class TravelPlanController {
 
     private final TravelPlanService travelPlanService;
 
+    @GetMapping("/favorites")
+    public ApiResult<Page<PublicPlanCardDTO>> getFavoritePlans(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String keyword) {
+        Page<PublicPlanCardDTO> plans = travelPlanService.getFavoritePlans(principal.getUserId(), keyword, page, size);
+        return ApiResult.success(plans);
+    }
+
     @PostMapping
     public ApiResult<TravelPlan> createTravelPlan(
             @AuthenticationPrincipal UserPrincipal principal,

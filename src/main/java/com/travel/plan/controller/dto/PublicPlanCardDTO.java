@@ -20,4 +20,5 @@ public class PublicPlanCardDTO {
     private Integer favoriteCount;
     private Boolean isLiked;
     private Boolean isFavorited;
+    private String favoritedAt;
 }

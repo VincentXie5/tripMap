@@ -24,4 +24,6 @@ public interface TravelPlanRepository extends JpaRepository<TravelPlan, Long> {
         AND (:keyword IS NULL OR t.title LIKE %:keyword% OR d.location LIKE %:keyword% OR d.remark LIKE %:keyword%)
         """)
     Page<TravelPlan> searchPublic(@Param("keyword") String keyword, Pageable pageable);
+
+    List<TravelPlan> findByIdInAndIsPublicTrue(List<Long> ids);
 }

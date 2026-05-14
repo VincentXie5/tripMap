@@ -13,6 +13,11 @@
           :class="{ active: route.path.startsWith('/xunji') || route.path.startsWith('/plan/') }"
           @click="router.push('/xunji')"
         >寻迹</span>
+        <span
+          class="nav-tab"
+          :class="{ active: route.path.startsWith('/favorites') }"
+          @click="router.push('/favorites')"
+        >星迹</span>
       </nav>
       <div class="header-right">
         <el-avatar :size="36" :src="avatarUrl">
