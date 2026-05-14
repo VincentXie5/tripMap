@@ -7,7 +7,7 @@
           class="nav-tab"
           :class="{ active: route.path === '/' }"
           @click="router.push('/')"
-        >我的计划</span>
+        >绘迹</span>
         <span
           class="nav-tab"
           :class="{ active: route.path.startsWith('/xunji') || route.path.startsWith('/plan/') }"
